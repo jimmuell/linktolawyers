@@ -68,18 +68,18 @@ export const palette = {
 
 export const Colors = {
   light: {
-    // Existing keys (tint updated to navy)
+    // Existing keys
     text: '#11181C',
     background: '#fff',
-    tint: palette.navy[500],
+    tint: palette.teal[400],
     icon: '#687076',
     tabIconDefault: '#687076',
-    tabIconSelected: palette.navy[500],
+    tabIconSelected: palette.teal[400],
 
     // Brand
-    primary: palette.navy[500],
+    primary: palette.teal[400],
     primaryForeground: '#FFFFFF',
-    secondary: palette.teal[500],
+    secondary: palette.navy[500],
     secondaryForeground: '#FFFFFF',
 
     // Surfaces
@@ -90,7 +90,7 @@ export const Colors = {
 
     // Borders
     border: palette.neutral[200],
-    borderFocused: palette.navy[500],
+    borderFocused: palette.teal[400],
     separator: palette.neutral[100],
 
     // Text variants
@@ -117,7 +117,7 @@ export const Colors = {
     overlay: 'rgba(0, 0, 0, 0.4)',
 
     // React Navigation theme keys
-    navPrimary: palette.navy[500],
+    navPrimary: palette.teal[400],
     navBackground: '#FFFFFF',
     navCard: '#FFFFFF',
     navText: '#11181C',
@@ -128,10 +128,10 @@ export const Colors = {
     // Existing keys
     text: '#ECEDEE',
     background: '#151718',
-    tint: '#fff',
+    tint: palette.teal[400],
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
-    tabIconSelected: '#fff',
+    tabIconSelected: palette.teal[400],
 
     // Brand
     primary: palette.teal[400],
