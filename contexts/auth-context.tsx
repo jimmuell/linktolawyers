@@ -14,13 +14,21 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setSession, setIsInitialized, fetchProfile, session, isInitialized } = useAuthStore();
+  const { setSession, setIsInitialized, fetchProfile, fetchAttorneyProfile, session, isInitialized } = useAuthStore();
 
   useEffect(() => {
+    const loadProfile = async (userId: string) => {
+      await fetchProfile(userId);
+      const profile = useAuthStore.getState().profile;
+      if (profile?.role === 'attorney') {
+        fetchAttorneyProfile(userId);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       if (currentSession?.user) {
-        fetchProfile(currentSession.user.id);
+        loadProfile(currentSession.user.id);
       }
       setIsInitialized(true);
     });
@@ -30,12 +38,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       if (newSession?.user) {
-        fetchProfile(newSession.user.id);
+        loadProfile(newSession.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [setSession, setIsInitialized, fetchProfile]);
+  }, [setSession, setIsInitialized, fetchProfile, fetchAttorneyProfile]);
 
   return (
     <AuthContext.Provider

@@ -65,10 +65,10 @@
 
 ### 1.6 Profile Setup
 
-- [ ] Client profile form (name, contact info)
-- [ ] Attorney profile form (bar number, state, practice areas, bio)
-- [ ] Avatar upload functionality
-- [ ] Profile update API integration
+- [x] Client profile form (name, contact info)
+- [x] Attorney profile form (bar number, state, practice areas, bio)
+- [x] Avatar upload functionality
+- [x] Profile update API integration
 
 ### 1.7 Role-Based Navigation
 

@@ -1,42 +1,28 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import { MotiView } from 'moti';
 import { useCallback, useRef, useState } from 'react';
 import {
+  Dimensions,
   FlatList,
   Pressable,
   StyleSheet,
   Text,
   type ViewToken,
   View,
-  useWindowDimensions,
 } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { type OnboardingSlide, onboardingSlides } from '@/constants/onboarding';
-import { Radii, Spacing, Typography } from '@/constants/typography';
+import { Spacing } from '@/constants/typography';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 const ONBOARDING_KEY = '@linktolawyers/onboarding-complete';
-
-function PaginationDot({ isActive }: { isActive: boolean }) {
-  const primary = useThemeColor({}, 'primary');
-  const border = useThemeColor({}, 'border');
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    width: withTiming(isActive ? 24 : 8, { duration: 200 }),
-    backgroundColor: withTiming(isActive ? primary : border, { duration: 200 }),
-  }));
-
-  return <Animated.View style={[styles.dot, animatedStyle]} />;
-}
+const { width } = Dimensions.get('window');
 
 export default function OnboardingScreen() {
-  const { width } = useWindowDimensions();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<OnboardingSlide>>(null);
 
@@ -44,7 +30,7 @@ export default function OnboardingScreen() {
   const primary = useThemeColor({}, 'primary');
   const textColor = useThemeColor({}, 'text');
   const textSecondary = useThemeColor({}, 'textSecondary');
-  const surface = useThemeColor({}, 'surface');
+  const border = useThemeColor({}, 'border');
   const textLink = useThemeColor({}, 'textLink');
 
   const isLastSlide = currentIndex === onboardingSlides.length - 1;
@@ -72,29 +58,46 @@ export default function OnboardingScreen() {
     }
   }, [isLastSlide, currentIndex, completeOnboarding]);
 
-  const renderItem = useCallback(
-    ({ item }: { item: OnboardingSlide }) => (
-      <View style={[styles.slide, { width }]}>
-        <View style={[styles.iconContainer, { backgroundColor: surface }]}>
-          <MaterialIcons name={item.iconName} size={64} color={primary} />
-        </View>
-        <Text style={[Typography.headlineMedium, styles.slideTitle, { color: textColor }]}>
-          {item.title}
-        </Text>
-        <Text style={[Typography.bodyLarge, styles.slideDescription, { color: textSecondary }]}>
-          {item.description}
-        </Text>
-      </View>
-    ),
-    [width, primary, textColor, textSecondary, surface],
+  const renderSlide = ({ item, index }: { item: OnboardingSlide; index: number }) => (
+    <View style={[styles.slide, { width }]}>
+      <MotiView
+        from={{ opacity: 0, scale: 0.8 }}
+        animate={{
+          opacity: currentIndex === index ? 1 : 0.5,
+          scale: currentIndex === index ? 1 : 0.8,
+        }}
+        transition={{ type: 'spring', damping: 15 }}
+        style={[styles.iconContainer, { backgroundColor: primary }]}
+      >
+        <Ionicons name={item.icon} size={64} color="#FFFFFF" />
+      </MotiView>
+
+      <MotiView
+        from={{ opacity: 0, translateY: 20 }}
+        animate={{
+          opacity: currentIndex === index ? 1 : 0,
+          translateY: currentIndex === index ? 0 : 20,
+        }}
+        transition={{ type: 'timing', duration: 400 }}
+      >
+        <Text style={[styles.title, { color: textColor }]}>{item.title}</Text>
+        <Text style={[styles.description, { color: textSecondary }]}>{item.description}</Text>
+      </MotiView>
+    </View>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: background }]}>
+      <View style={styles.header}>
+        <Pressable onPress={completeOnboarding} hitSlop={8}>
+          <Text style={[styles.skipText, { color: textLink }]}>Skip</Text>
+        </Pressable>
+      </View>
+
       <FlatList
         ref={flatListRef}
         data={onboardingSlides}
-        renderItem={renderItem}
+        renderItem={renderSlide}
         keyExtractor={(item) => item.id}
         horizontal
         pagingEnabled
@@ -102,30 +105,32 @@ export default function OnboardingScreen() {
         bounces={false}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
+        style={styles.flatList}
       />
 
       <View style={styles.footer}>
         <View style={styles.pagination}>
           {onboardingSlides.map((slide, index) => (
-            <PaginationDot key={slide.id} isActive={index === currentIndex} />
+            <MotiView
+              key={slide.id}
+              animate={{
+                width: currentIndex === index ? 24 : 8,
+                backgroundColor: currentIndex === index ? primary : border,
+              }}
+              transition={{ type: 'spring', damping: 15 }}
+              style={styles.dot}
+            />
           ))}
         </View>
 
-        <View style={styles.actions}>
-          {!isLastSlide && (
-            <Pressable onPress={completeOnboarding} style={styles.skipButton}>
-              <Text style={[Typography.labelLarge, { color: textLink }]}>Skip</Text>
-            </Pressable>
-          )}
-          <Button
-            title={isLastSlide ? 'Get Started' : 'Next'}
-            onPress={handleNext}
-            size="lg"
-            style={styles.nextButton}
-          />
-        </View>
+        <Button
+          title={isLastSlide ? 'Get Started' : 'Next'}
+          onPress={handleNext}
+          size="lg"
+          style={styles.button}
+        />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -133,53 +138,59 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    alignItems: 'flex-end',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+  },
+  skipText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  flatList: {
+    flex: 1,
+  },
   slide: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing['3xl'],
+    paddingHorizontal: 40,
   },
   iconContainer: {
-    width: 128,
-    height: 128,
-    borderRadius: Radii['2xl'],
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing['3xl'],
+    marginBottom: 48,
   },
-  slideTitle: {
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: 16,
   },
-  slideDescription: {
+  description: {
+    fontSize: 16,
     textAlign: 'center',
+    lineHeight: 24,
   },
   footer: {
     paddingHorizontal: Spacing['2xl'],
-    paddingBottom: Spacing['5xl'],
+    paddingBottom: Spacing['2xl'],
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: Spacing.sm,
     marginBottom: Spacing['3xl'],
+    gap: 8,
   },
   dot: {
     height: 8,
-    borderRadius: Radii.full,
+    borderRadius: 4,
   },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  skipButton: {
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-  },
-  nextButton: {
-    flex: 1,
-    marginLeft: Spacing.lg,
+  button: {
+    width: '100%',
   },
 });

@@ -30,7 +30,17 @@ export const profileUpdateSchema = z.object({
   website: z.string().url('Please enter a valid URL').nullable().or(z.literal('')),
 });
 
+export const attorneyProfileSchema = z.object({
+  barNumber: z.string().min(1, 'Bar number is required'),
+  barState: z.string().min(1, 'Bar state is required'),
+  practiceAreas: z.array(z.string()).min(1, 'Select at least one practice area'),
+  yearsOfExperience: z.number().int().min(0, 'Must be 0 or more').nullable(),
+  bio: z.string().max(1000, 'Bio must be 1000 characters or less').nullable(),
+  hourlyRate: z.number().min(0, 'Must be 0 or more').nullable(),
+});
+
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 export type ProfileUpdateFormData = z.infer<typeof profileUpdateSchema>;
+export type AttorneyProfileFormData = z.infer<typeof attorneyProfileSchema>;

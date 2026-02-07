@@ -1,41 +1,41 @@
 import type { ComponentProps } from 'react';
 
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 export interface OnboardingSlide {
   id: string;
   title: string;
   description: string;
-  iconName: ComponentProps<typeof MaterialIcons>['name'];
+  icon: ComponentProps<typeof Ionicons>['name'];
 }
 
 export const onboardingSlides: OnboardingSlide[] = [
   {
     id: '1',
-    title: 'Find the Right Attorney',
+    icon: 'search',
+    title: 'Find the Right Lawyer',
     description:
-      'Search our network of qualified attorneys by practice area, location, and experience to find the perfect match for your legal needs.',
-    iconName: 'search',
+      'Browse qualified attorneys specializing in your legal needs. Filter by practice area, location, and budget.',
   },
   {
     id: '2',
-    title: 'Post Your Legal Request',
+    icon: 'chatbubbles',
+    title: 'Get Competitive Quotes',
     description:
-      'Describe your legal matter and let attorneys come to you with tailored proposals and competitive quotes.',
-    iconName: 'description',
+      'Receive and compare quotes from multiple attorneys. Choose the best fit for your case and budget.',
   },
   {
     id: '3',
-    title: 'Compare Quotes',
+    icon: 'shield-checkmark',
+    title: 'Secure Communication',
     description:
-      'Review and compare proposals from multiple attorneys side by side to make an informed decision.',
-    iconName: 'compare-arrows',
+      'Message attorneys directly through our secure platform. Share documents and schedule consultations.',
   },
   {
     id: '4',
-    title: 'Secure Messaging',
+    icon: 'briefcase',
+    title: 'Manage Your Case',
     description:
-      'Communicate directly with your attorney through our encrypted messaging platform with complete confidentiality.',
-    iconName: 'lock',
+      'Track your case progress, milestones, and documents all in one place. Stay informed every step of the way.',
   },
 ];
