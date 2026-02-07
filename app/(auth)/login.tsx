@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
   Alert,
@@ -15,17 +16,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { TextInput } from '@/components/ui/text-input';
-import { Spacing, Typography } from '@/constants/typography';
+import { Radii, Spacing, Typography } from '@/constants/typography';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { type LoginFormData, loginSchema } from '@/lib/validators';
 import { useAuthStore } from '@/stores/auth-store';
+
+const TEST_ACCOUNTS = {
+  client: { email: 'testclient@linktolawyers.dev', password: 'Test1234!', role: 'client', fullName: 'Test Client' },
+  attorney: { email: 'testattorney@linktolawyers.dev', password: 'Test1234!', role: 'attorney', fullName: 'Test Attorney' },
+} as const;
 
 export default function LoginScreen() {
   const background = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const textSecondary = useThemeColor({}, 'textSecondary');
   const textLink = useThemeColor({}, 'textLink');
+  const warningBg = useThemeColor({}, 'warningBackground');
+  const warningColor = useThemeColor({}, 'warning');
   const signIn = useAuthStore((s) => s.signIn);
+  const signUp = useAuthStore((s) => s.signUp);
+  const [devLoading, setDevLoading] = useState<'client' | 'attorney' | null>(null);
 
   const {
     control,
@@ -45,6 +55,27 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (error) {
       Alert.alert('Sign In Failed', error instanceof Error ? error.message : 'An error occurred');
+    }
+  };
+
+  const handleDevLogin = async (role: 'client' | 'attorney') => {
+    const account = TEST_ACCOUNTS[role];
+    setDevLoading(role);
+    try {
+      try {
+        await signIn(account.email, account.password);
+      } catch {
+        await signUp(account.email, account.password, account.fullName, account.role);
+        await signIn(account.email, account.password);
+      }
+      router.replace('/(tabs)');
+    } catch (error) {
+      Alert.alert(
+        'Dev Login Failed',
+        error instanceof Error ? error.message : 'An error occurred. Check Supabase config.',
+      );
+    } finally {
+      setDevLoading(null);
     }
   };
 
@@ -125,6 +156,34 @@ export default function LoginScreen() {
               <Text style={[Typography.labelLarge, { color: textLink }]}>Sign Up</Text>
             </Pressable>
           </View>
+
+          {__DEV__ && (
+            <View style={[styles.devSection, { backgroundColor: warningBg, borderColor: warningColor }]}>
+              <Text style={[Typography.labelMedium, { color: warningColor }]}>
+                DEV ONLY — Quick Login
+              </Text>
+              <View style={styles.devButtons}>
+                <Button
+                  title="Test Client"
+                  variant="outline"
+                  size="sm"
+                  loading={devLoading === 'client'}
+                  disabled={devLoading !== null}
+                  onPress={() => handleDevLogin('client')}
+                  style={styles.devButton}
+                />
+                <Button
+                  title="Test Attorney"
+                  variant="outline"
+                  size="sm"
+                  loading={devLoading === 'attorney'}
+                  disabled={devLoading !== null}
+                  onPress={() => handleDevLogin('attorney')}
+                  style={styles.devButton}
+                />
+              </View>
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -160,5 +219,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: Spacing['3xl'],
+  },
+  devSection: {
+    marginTop: Spacing['3xl'],
+    padding: Spacing.lg,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    gap: Spacing.md,
+  },
+  devButtons: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  devButton: {
+    flex: 1,
   },
 });

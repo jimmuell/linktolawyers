@@ -26,7 +26,7 @@ eas build --profile production --platform ios
 
 ## Architecture
 
-**Routing**: File-based routing via Expo Router. Routes live in `app/`. The root layout (`app/_layout.tsx`) wraps the app in a ThemeProvider with a Stack navigator. The `(tabs)` group is the default entry point with a bottom tab navigator (Home and Explore tabs). Modal screens are presented from the root stack.
+**Routing**: File-based routing via Expo Router. Routes live in `app/`. The root layout (`app/_layout.tsx`) wraps the app in QueryClientProvider > ThemeProvider > AuthProvider > NavigationThemeWrapper > ProtectedRouteGuard > Stack. The app starts at `app/index.tsx` which redirects to `/(auth)/splash`. The splash screen checks auth state and routes to `/(tabs)` (authenticated) or `/(auth)/login` (unauthenticated). The `(auth)` group contains splash, onboarding, login, register, and forgot-password screens. A `ProtectedRouteGuard` in the root layout redirects unauthenticated users away from protected routes.
 
 **Theming**: Centralized in `constants/theme.ts` with light/dark color definitions. Components use `useThemeColor()` hook and themed wrappers (`ThemedText`, `ThemedView`). Platform-specific hooks exist (e.g., `use-color-scheme.web.ts`).
 
@@ -43,6 +43,8 @@ eas build --profile production --platform ios
 
 **Database**: Supabase Postgres with a `profiles` table (id, updated_at, username, full_name, avatar_url, website, role). The `role` column uses a `user_role` enum (`'client' | 'attorney'`).
 
+**Auth**: Supabase Auth with Zustand store (`stores/auth-store.ts`) for signIn/signUp/signOut/resetPassword. Auth context (`contexts/auth-context.tsx`) listens to `onAuthStateChange` and provides `isInitialized`/`isAuthenticated`. Session persisted via SQLite-backed localStorage.
+
 ### Key Files
 
 | File | Purpose |
@@ -50,7 +52,10 @@ eas build --profile production --platform ios
 | `lib/supabase.ts` | Supabase client singleton |
 | `lib/validators.ts` | Zod schemas for forms |
 | `types/index.ts` | Shared TypeScript types & Database type |
-| `app/_layout.tsx` | Root layout with QueryClientProvider + ThemeProvider |
+| `stores/auth-store.ts` | Zustand auth store (session, user, profile, auth methods) |
+| `contexts/auth-context.tsx` | Auth context provider with Supabase session listener |
+| `app/_layout.tsx` | Root layout with providers + ProtectedRouteGuard |
+| `app/index.tsx` | Entry point, redirects to auth splash |
 
 ## Key Conventions
 
@@ -61,6 +66,12 @@ eas build --profile production --platform ios
 - EAS project ID: `e5e360be-4b42-4bfd-9c73-983ace899aa7`
 - App version source is `remote` (managed by EAS)
 - VS Code auto-fixes, organizes imports, and sorts members on save
+
+## Task Tracking
+
+- When completing work on a feature or phase, **immediately check off the corresponding items** in `docs/DEVELOPMENT_PLAN.md` (change `- [ ]` to `- [x]`).
+- Do not wait until the end — mark tasks done as soon as they are implemented, tested (`tsc` + `lint` pass), and verified.
+- Keep CLAUDE.md architecture section up to date when adding new providers, stores, or changing routing.
 
 ## SQL Migrations
 

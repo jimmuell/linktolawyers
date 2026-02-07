@@ -45,23 +45,23 @@
 
 ### 1.4 Authentication Screens
 
-- [ ] `(auth)/splash` - Splash screen with logo animation
-- [ ] `(auth)/onboarding` - Feature introduction slides (4 slides)
-- [ ] `(auth)/login` - Email/password login
-- [ ] `(auth)/register` - Registration with role selection
-- [ ] `(auth)/forgot-password` - Password reset flow
+- [x] `(auth)/splash` - Splash screen with logo animation
+- [x] `(auth)/onboarding` - Feature introduction slides (4 slides)
+- [x] `(auth)/login` - Email/password login
+- [x] `(auth)/register` - Registration with role selection
+- [x] `(auth)/forgot-password` - Password reset flow
 
 ### 1.5 Authentication Logic
 
-- [ ] Email/password registration with Supabase Auth
-- [ ] Email/password login
-- [ ] Password reset via email
-- [ ] Role selection during signup (Client or Attorney)
-- [ ] Secure token storage with expo-secure-store
-- [ ] Auto-login on app launch (session persistence)
-- [ ] Logout functionality
-- [ ] Auth state management (zustand store)
-- [ ] Protected route middleware
+- [x] Email/password registration with Supabase Auth
+- [x] Email/password login
+- [x] Password reset via email
+- [x] Role selection during signup (Client or Attorney)
+- [x] Secure token storage (SQLite-backed localStorage via Supabase client)
+- [x] Auto-login on app launch (session persistence)
+- [x] Logout functionality
+- [x] Auth state management (zustand store)
+- [x] Protected route middleware
 
 ### 1.6 Profile Setup
 

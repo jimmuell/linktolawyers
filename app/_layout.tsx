@@ -1,11 +1,11 @@
 import { type Theme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import 'react-native-reanimated';
 
-import { AuthProvider } from '@/contexts/auth-context';
+import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { Colors } from '@/constants/theme';
 import { ThemeProvider, useThemeContext } from '@/contexts/theme-context';
 
@@ -56,18 +56,40 @@ function NavigationThemeWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
+function ProtectedRouteGuard({ children }: { children: React.ReactNode }) {
+  const { isInitialized, isAuthenticated } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const firstSegment = segments[0] as string | undefined;
+    const inAuthGroup = firstSegment === '(auth)';
+    const isRoot = !firstSegment || firstSegment === 'index';
+
+    if (!isAuthenticated && !inAuthGroup && !isRoot) {
+      router.replace('/(auth)/splash');
+    }
+  }, [isInitialized, isAuthenticated, segments, router]);
+
+  return <>{children}</>;
+}
+
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
           <NavigationThemeWrapper>
-            <Stack>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-            </Stack>
+            <ProtectedRouteGuard>
+              <Stack>
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+              </Stack>
+            </ProtectedRouteGuard>
           </NavigationThemeWrapper>
         </AuthProvider>
       </ThemeProvider>
