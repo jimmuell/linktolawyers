@@ -1,0 +1,508 @@
+# LinkToLawyers Development Plan
+
+> Implementation checklist organized by phase. Check off items as completed.
+
+---
+
+## Current Status
+
+- **Project Structure:** Single Expo app (spec describes monorepo - to be migrated later if needed)
+
+---
+
+## Phase 1: Foundation & Authentication
+
+    ### 1.1 Project Setup
+
+- [x] Initialize Expo project with TypeScript
+- [x] Configure expo-router for file-based navigation
+- [x] Set up Supabase for development
+- [x] Configure environment variables
+- [x] Set up ESLint
+- [x] Install core dependencies (zustand, tanstack-query, react-hook-form, zod)
+- [x] Create shared types file (`types/index.ts`)
+- [x] Create validation schemas (`lib/validators.ts`)
+- [x] Set up Supabase client (`lib/supabase.ts`)
+
+### 1.2 Database Schema (Phase 1)
+
+- [x] Create `profiles` table (extends auth.users)
+- [x] Create `attorney_profiles` table
+- [x] Create `push_tokens` table
+- [x] Set up Row Level Security policies
+- [x] Push migrations to remote database
+- [x] Test database
+
+### 1.3 Theme & Design System
+
+- [ ] Create theme context with light/dark/system modes
+- [ ] Implement theme persistence with AsyncStorage
+- [ ] Define color palette constants
+- [ ] Create base typography styles
+- [ ] Create reusable Button component
+- [ ] Create reusable TextInput component
+- [ ] Create reusable Card component
+
+### 1.4 Authentication Screens
+
+- [ ] `(auth)/splash` - Splash screen with logo animation
+- [ ] `(auth)/onboarding` - Feature introduction slides (4 slides)
+- [ ] `(auth)/login` - Email/password login
+- [ ] `(auth)/register` - Registration with role selection
+- [ ] `(auth)/forgot-password` - Password reset flow
+
+### 1.5 Authentication Logic
+
+- [ ] Email/password registration with Supabase Auth
+- [ ] Email/password login
+- [ ] Password reset via email
+- [ ] Role selection during signup (Client or Attorney)
+- [ ] Secure token storage with expo-secure-store
+- [ ] Auto-login on app launch (session persistence)
+- [ ] Logout functionality
+- [ ] Auth state management (zustand store)
+- [ ] Protected route middleware
+
+### 1.6 Profile Setup
+
+- [ ] Client profile form (name, contact info)
+- [ ] Attorney profile form (bar number, state, practice areas, bio)
+- [ ] Avatar upload functionality
+- [ ] Profile update API integration
+
+### 1.7 Role-Based Navigation
+
+- [ ] `(client)/(tabs)` layout - Client tab navigation (Home, Requests, Messages, Profile)
+- [ ] `(attorney)/(tabs)` layout - Attorney tab navigation (Home, Browse, Quotes, Messages, Profile)
+- [ ] Redirect users based on role after login
+- [ ] Home dashboard (role-specific content)
+- [ ] Profile screen with settings access
+- [ ] Settings screen
+
+### 1.8 Push Notifications
+
+- [ ] Request push notification permissions
+- [ ] Register push token with backend
+- [ ] Store push tokens in database
+- [ ] Handle notification received (foreground)
+- [ ] Handle notification tap (background)
+
+---
+
+## Phase 2: Client Request System
+
+### 2.1 Database Schema (Phase 2)
+
+- [ ] Create `requests` table
+- [ ] Create `request_attachments` table
+- [ ] Create `saved_requests` table
+- [ ] Create `hidden_requests` table
+- [ ] Set up RLS policies for requests
+
+### 2.2 Client - Request Creation
+
+- [ ] `(client)/requests/new` - Multi-step wizard layout
+- [ ] Step 1: Practice area selection (searchable picker)
+- [ ] Step 2: Request details (title, description)
+- [ ] Step 3: Location preferences (state, city)
+- [ ] Step 4: Budget range (optional, min/max inputs)
+- [ ] Step 5: Document attachments (photos, PDFs)
+- [ ] Step 6: Review and submit
+- [ ] Form validation with zod
+- [ ] Draft saving functionality
+- [ ] Request submission to Supabase
+- [ ] Success confirmation screen
+
+### 2.3 Client - Request Management
+
+- [ ] `(client)/requests/index` - Request list view
+- [ ] Status badges (draft, pending, quoted, etc.)
+- [ ] Pull-to-refresh
+- [ ] `(client)/requests/[id]` - Request detail view
+- [ ] Request status timeline visualization
+- [ ] Edit pending requests
+- [ ] Cancel/withdraw requests
+- [ ] Delete draft requests
+
+### 2.4 Attorney - Browse Requests
+
+- [ ] `(attorney)/browse/index` - Available requests feed
+- [ ] Request card component (title, category, budget, date)
+- [ ] `(attorney)/browse/[id]` - Request detail view
+- [ ] Filter by practice area
+- [ ] Filter by location
+- [ ] Filter by budget range
+- [ ] Sort options (newest, budget, urgency)
+- [ ] Save/bookmark requests
+- [ ] Hide/dismiss requests
+- [ ] Quick quote button (navigates to quote form)
+
+### 2.5 Notifications (Phase 2)
+
+- [ ] New request matches notification (attorney)
+- [ ] Request status change notification (client)
+
+---
+
+## Phase 3: Quoting Functionality
+
+### 3.1 Database Schema (Phase 3)
+
+- [ ] Create `quotes` table
+- [ ] Create `quote_templates` table
+- [ ] Set up RLS policies for quotes
+
+### 3.2 Attorney - Quote Creation
+
+- [ ] `(attorney)/quotes/new` - Quote creation form
+- [ ] Pricing type selection (flat fee, hourly, retainer, contingency)
+- [ ] Fee amount input
+- [ ] Scope of work (rich text)
+- [ ] Estimated timeline
+- [ ] Terms and conditions
+- [ ] Valid until date picker
+- [ ] Quote preview before submission
+- [ ] Submit quote to Supabase
+
+### 3.3 Attorney - Quote Management
+
+- [ ] `(attorney)/quotes/index` - Submitted quotes dashboard
+- [ ] Quote status tracking (pending, viewed, accepted, declined, expired)
+- [ ] `(attorney)/quotes/[id]` - Quote detail view
+- [ ] Edit/revise quote
+- [ ] Withdraw quote
+- [ ] Quote templates system
+- [ ] `(attorney)/quotes/templates` - Manage templates
+
+### 3.4 Client - Quote Review
+
+- [ ] `(client)/requests/[id]/quotes` - Quotes list for request
+- [ ] Quote card component (attorney info, price, status)
+- [ ] `(client)/requests/[id]/quotes/[quoteId]` - Quote detail
+- [ ] Attorney profile quick view
+- [ ] `(client)/requests/[id]/quotes/compare` - Side-by-side comparison
+- [ ] Accept quote flow (confirmation modal, terms acceptance)
+- [ ] Decline quote with optional reason
+- [ ] Accepted quotes history
+
+### 3.5 Notifications (Phase 3)
+
+- [ ] New quote received notification (client)
+- [ ] Quote viewed notification (attorney)
+- [ ] Quote accepted/declined notification (attorney)
+- [ ] Quote expiring soon notification (attorney)
+
+---
+
+## Phase 4: Communication & Messaging
+
+### 4.1 Database Schema (Phase 4)
+
+- [ ] Create `conversations` table
+- [ ] Create `conversation_participants` table
+- [ ] Create `messages` table
+- [ ] Create `message_attachments` table
+- [ ] Create `broadcasts` table (admin)
+- [ ] Set up RLS policies for messaging
+- [ ] Set up Supabase Realtime subscriptions
+
+### 4.2 Conversations List
+
+- [ ] `(tabs)/messages/index` - Conversation list screen
+- [ ] Conversation card (avatar, name, last message, time, unread badge)
+- [ ] Sort by recent activity
+- [ ] Unread message count badge on tab
+- [ ] Pull-to-refresh
+- [ ] Search conversations
+
+### 4.3 Chat Interface
+
+- [ ] `(tabs)/messages/[conversationId]` - Chat view
+- [ ] Message bubbles (sent/received styling)
+- [ ] Timestamps
+- [ ] Auto-scroll to bottom
+- [ ] Load more (older messages)
+- [ ] Typing indicators (Supabase Realtime)
+- [ ] Read receipts
+- [ ] Online status indicator
+
+### 4.4 Message Types
+
+- [ ] Text messages
+- [ ] Image attachments (camera + gallery)
+- [ ] Document attachments (PDF, etc.)
+- [ ] System messages (quote accepted, case created, etc.)
+- [ ] File preview before sending
+- [ ] Image viewer (full screen)
+- [ ] Document download
+
+### 4.5 Message Threading
+
+- [ ] Context-based conversations (request, quote, case)
+- [ ] Show conversation context header
+- [ ] Link to related request/quote/case
+
+### 4.6 Realtime Features
+
+- [ ] Supabase Realtime subscription for new messages
+- [ ] Typing indicator broadcast
+- [ ] Online presence tracking
+- [ ] Optimistic UI updates
+
+### 4.7 Notifications (Phase 4)
+
+- [ ] New message push notification
+- [ ] Notification tap opens specific conversation
+
+---
+
+## Phase 5: Consultation Scheduling
+
+### 5.1 Database Schema (Phase 5)
+
+- [ ] Create `attorney_availability` table
+- [ ] Create `availability_overrides` table
+- [ ] Create `consultations` table
+- [ ] Create `consultation_reminders` table
+- [ ] Set up RLS policies for scheduling
+
+### 5.2 Attorney - Availability Management
+
+- [ ] `(attorney)/schedule/index` - Schedule overview
+- [ ] `(attorney)/schedule/availability` - Weekly schedule setup
+- [ ] Day-of-week availability toggle
+- [ ] Working hours per day (start/end time)
+- [ ] Break times
+- [ ] Time slot duration configuration (15, 30, 45, 60 min)
+- [ ] Buffer time between appointments
+- [ ] Custom availability overrides
+- [ ] Vacation/blackout dates
+
+### 5.3 Attorney - Appointments
+
+- [ ] `(attorney)/schedule/appointments` - Appointment list
+- [ ] Calendar view (day/week)
+- [ ] Upcoming appointments section
+- [ ] Appointment detail view
+- [ ] Confirm/decline appointment requests
+- [ ] Cancel with reason
+- [ ] Reschedule appointment
+- [ ] Device calendar sync (expo-calendar)
+- [ ] Appointment reminder setup
+
+### 5.4 Client - Book Consultation
+
+- [ ] `(client)/consultations/book/[attorneyId]` - Booking flow
+- [ ] Calendar date picker
+- [ ] Available time slots display
+- [ ] Consultation type selection (video, phone, in-person)
+- [ ] Add notes/agenda
+- [ ] Confirm booking
+- [ ] Booking confirmation screen
+- [ ] Add to device calendar option
+
+### 5.5 Client - My Consultations
+
+- [ ] `(client)/consultations/index` - Consultations list
+- [ ] Upcoming appointments
+- [ ] Past appointments
+- [ ] `(client)/consultations/[id]` - Consultation detail
+- [ ] Reschedule consultation
+- [ ] Cancel consultation
+- [ ] Meeting link display (for video calls)
+
+### 5.6 Notifications (Phase 5)
+
+- [ ] New booking request notification (attorney)
+- [ ] Booking confirmed notification (client)
+- [ ] Appointment reminder (24h, 1h before)
+- [ ] Appointment cancelled notification
+
+---
+
+## Phase 6: Case Management & Polish
+
+### 6.1 Database Schema (Phase 6)
+
+- [ ] Create `cases` table
+- [ ] Create `case_milestones` table
+- [ ] Create `case_documents` table
+- [ ] Create `case_notes` table
+- [ ] Create `case_activities` table
+- [ ] Create `reviews` table
+- [ ] Create `platform_config` table
+- [ ] Set up RLS policies for cases
+
+### 6.2 Case Management
+
+- [ ] Auto-create case on quote acceptance
+- [ ] Generate unique case number
+- [ ] `(tabs)/cases/index` - Cases list
+- [ ] Active/Completed tabs
+- [ ] Case search
+- [ ] `(tabs)/cases/[id]` - Case detail view
+- [ ] Case information card
+- [ ] Participants display
+
+### 6.3 Case Timeline
+
+- [ ] `(tabs)/cases/[id]/timeline` - Activity timeline
+- [ ] Chronological activity feed
+- [ ] Status change events
+- [ ] Milestone events
+- [ ] Document added events
+- [ ] Message events
+
+### 6.4 Case Documents
+
+- [ ] `(tabs)/cases/[id]/documents` - Document repository
+- [ ] Upload documents (categorized)
+- [ ] Document list by category
+- [ ] Document preview
+- [ ] Download documents
+- [ ] Delete documents (with permission)
+
+### 6.5 Case Status & Milestones (Attorney)
+
+- [ ] Update case status
+- [ ] Add milestones
+- [ ] Mark milestones complete
+- [ ] Add case notes (private/shared)
+- [ ] Mark case complete
+- [ ] Final document upload
+
+### 6.6 Reviews
+
+- [ ] `(tabs)/cases/[id]/review` - Leave review screen
+- [ ] Star rating (1-5)
+- [ ] Written review text
+- [ ] Submit review
+- [ ] View received reviews (attorney profile)
+- [ ] Average rating display
+
+### 6.7 Polish & Optimization
+
+- [ ] Loading states and skeletons
+- [ ] Error handling and retry logic
+- [ ] Empty states for all lists
+- [ ] Pull-to-refresh on all lists
+- [ ] Optimistic updates
+- [ ] Offline support for critical features
+- [ ] Image optimization
+- [ ] List virtualization (FlashList)
+- [ ] Bundle size optimization
+
+### 6.8 Accessibility
+
+- [ ] VoiceOver support (iOS)
+- [ ] TalkBack support (Android)
+- [ ] Proper focus management
+- [ ] Color contrast compliance
+- [ ] Touch target sizes
+
+### 6.9 Deep Linking
+
+- [ ] Configure deep linking scheme
+- [ ] Link to specific request
+- [ ] Link to specific case
+- [ ] Link to conversation
+- [ ] Universal links setup
+
+### 6.10 App Store Preparation
+
+- [ ] App icon finalization
+- [ ] Splash screen finalization
+- [ ] iOS screenshots (all device sizes)
+- [ ] Android screenshots (all device sizes)
+- [ ] App Store description
+- [ ] Google Play description
+- [ ] Privacy policy
+- [ ] Terms of service
+- [ ] EAS Build configuration
+- [ ] TestFlight build
+- [ ] Internal testing track (Android)
+
+---
+
+## Admin Web App (Future Phase)
+
+> Note: Admin web app will be built as separate Next.js app after mobile MVP
+
+### Admin - Foundation
+- [ ] Set up Next.js project with App Router
+- [ ] Configure Tailwind CSS
+- [ ] Install shadcn/ui components
+- [ ] Set up Supabase SSR client
+- [ ] Admin authentication (admin role check)
+- [ ] Protected routes middleware
+- [ ] Dashboard layout (sidebar navigation)
+
+### Admin - User Management
+- [ ] Users data table (search, filter, sort, paginate)
+- [ ] User detail view
+- [ ] Attorney verification workflow
+- [ ] User suspension/activation
+- [ ] Activity logs viewer
+
+### Admin - Content Management
+- [ ] Requests data table with moderation tools
+- [ ] Quotes data table with oversight
+- [ ] Cases data table with escalation queue
+- [ ] Reviews moderation queue
+- [ ] Flagged content management
+
+### Admin - Messaging
+- [ ] Message monitoring dashboard
+- [ ] Flagged messages queue
+- [ ] Broadcast messaging system
+
+### Admin - Analytics
+- [ ] User metrics dashboard
+- [ ] Request/quote analytics
+- [ ] Financial metrics
+- [ ] Attorney performance metrics
+- [ ] Case completion analytics
+- [ ] Charts with Recharts
+
+### Admin - Settings
+- [ ] Platform configuration
+- [ ] Fee structure settings
+- [ ] Email templates
+- [ ] Notification settings
+
+---
+
+## Technical Debt & Improvements
+
+- [ ] Migrate to monorepo structure (Turborepo) if needed
+- [ ] Extract shared packages (@linktolawyers/shared, validators, api-client)
+- [ ] Add comprehensive error boundaries
+- [ ] Add analytics tracking
+- [ ] Add crash reporting (Sentry)
+- [ ] Performance monitoring
+- [ ] Automated testing setup (Jest/Vitest)
+- [ ] E2E testing setup (Detox/Maestro)
+- [ ] CI/CD pipeline (GitHub Actions + EAS)
+
+---
+
+## Quick Reference
+
+### Run Commands
+```bash
+npm start          # Start Expo dev server
+npm run ios        # Run on iOS simulator
+npm run android    # Run on Android emulator
+npm run lint       # Run ESLint
+```
+
+### Key Files
+- `app/_layout.tsx` - Root navigation
+- `contexts/theme.tsx` - Theme provider
+- `lib/supabase.ts` - Supabase client
+- `types/index.ts` - TypeScript types
+- `lib/validators.ts` - Zod schemas
+
+---
+
+*Last Updated: February 2026*
