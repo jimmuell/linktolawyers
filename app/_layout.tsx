@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useMemo } from 'react';
 import 'react-native-reanimated';
 
+import { AuthProvider } from '@/contexts/auth-context';
 import { Colors } from '@/constants/theme';
 import { ThemeProvider, useThemeContext } from '@/contexts/theme-context';
 
@@ -19,7 +20,7 @@ const queryClient = new QueryClient({
 });
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: 'index',
 };
 
 function NavigationThemeWrapper({ children }: { children: React.ReactNode }) {
@@ -59,13 +60,16 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <NavigationThemeWrapper>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          </Stack>
-        </NavigationThemeWrapper>
+        <AuthProvider>
+          <NavigationThemeWrapper>
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+            </Stack>
+          </NavigationThemeWrapper>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

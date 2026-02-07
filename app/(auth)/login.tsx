@@ -18,12 +18,14 @@ import { TextInput } from '@/components/ui/text-input';
 import { Spacing, Typography } from '@/constants/typography';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { type LoginFormData, loginSchema } from '@/lib/validators';
+import { useAuthStore } from '@/stores/auth-store';
 
 export default function LoginScreen() {
   const background = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const textSecondary = useThemeColor({}, 'textSecondary');
   const textLink = useThemeColor({}, 'textLink');
+  const signIn = useAuthStore((s) => s.signIn);
 
   const {
     control,
@@ -37,8 +39,13 @@ export default function LoginScreen() {
     },
   });
 
-  const onSubmit = (data: LoginFormData) => {
-    Alert.alert('TODO', `Sign in with: ${data.email}`);
+  const onSubmit = async (data: LoginFormData) => {
+    try {
+      await signIn(data.email, data.password);
+      router.replace('/(tabs)');
+    } catch (error) {
+      Alert.alert('Sign In Failed', error instanceof Error ? error.message : 'An error occurred');
+    }
   };
 
   return (

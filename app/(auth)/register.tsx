@@ -19,12 +19,14 @@ import { TextInput } from '@/components/ui/text-input';
 import { Spacing, Typography } from '@/constants/typography';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { type RegisterFormData, registerSchema } from '@/lib/validators';
+import { useAuthStore } from '@/stores/auth-store';
 
 export default function RegisterScreen() {
   const background = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const textSecondary = useThemeColor({}, 'textSecondary');
   const textLink = useThemeColor({}, 'textLink');
+  const signUp = useAuthStore((s) => s.signUp);
 
   const {
     control,
@@ -41,8 +43,15 @@ export default function RegisterScreen() {
     },
   });
 
-  const onSubmit = (data: RegisterFormData) => {
-    Alert.alert('TODO', `Register: ${data.email} as ${data.role}`);
+  const onSubmit = async (data: RegisterFormData) => {
+    try {
+      await signUp(data.email, data.password, data.fullName, data.role);
+      Alert.alert('Account Created', 'Please check your email to verify your account.', [
+        { text: 'OK', onPress: () => router.replace('/(auth)/login') },
+      ]);
+    } catch (error) {
+      Alert.alert('Sign Up Failed', error instanceof Error ? error.message : 'An error occurred');
+    }
   };
 
   return (

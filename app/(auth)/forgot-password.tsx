@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,6 +20,7 @@ import { TextInput } from '@/components/ui/text-input';
 import { Spacing, Typography } from '@/constants/typography';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { type ForgotPasswordFormData, forgotPasswordSchema } from '@/lib/validators';
+import { useAuthStore } from '@/stores/auth-store';
 
 export default function ForgotPasswordScreen() {
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -28,6 +30,7 @@ export default function ForgotPasswordScreen() {
   const textSecondary = useThemeColor({}, 'textSecondary');
   const textLink = useThemeColor({}, 'textLink');
   const success = useThemeColor({}, 'success');
+  const resetPassword = useAuthStore((s) => s.resetPassword);
 
   const {
     control,
@@ -40,8 +43,16 @@ export default function ForgotPasswordScreen() {
     },
   });
 
-  const onSubmit = (data: ForgotPasswordFormData) => {
-    setSentTo(data.email);
+  const onSubmit = async (data: ForgotPasswordFormData) => {
+    try {
+      await resetPassword(data.email);
+      setSentTo(data.email);
+    } catch (error) {
+      Alert.alert(
+        'Request Failed',
+        error instanceof Error ? error.message : 'An error occurred',
+      );
+    }
   };
 
   return (

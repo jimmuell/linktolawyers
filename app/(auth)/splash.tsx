@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Spacing, Typography } from '@/constants/typography';
+import { useAuth } from '@/contexts/auth-context';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 const ONBOARDING_KEY = '@linktolawyers/onboarding-complete';
@@ -13,14 +14,20 @@ export default function SplashScreen() {
   const background = useThemeColor({}, 'background');
   const primary = useThemeColor({}, 'primary');
   const textSecondary = useThemeColor({}, 'textSecondary');
+  const { isInitialized, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    const navigate = async () => {
-      const [onboardingComplete] = await Promise.all([
-        AsyncStorage.getItem(ONBOARDING_KEY),
-        new Promise((resolve) => setTimeout(resolve, 1500)),
-      ]);
+    if (!isInitialized) return;
 
+    const navigate = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      if (isAuthenticated) {
+        router.replace('/(tabs)');
+        return;
+      }
+
+      const onboardingComplete = await AsyncStorage.getItem(ONBOARDING_KEY);
       if (onboardingComplete) {
         router.replace('/(auth)/login');
       } else {
@@ -29,7 +36,7 @@ export default function SplashScreen() {
     };
 
     navigate();
-  }, []);
+  }, [isInitialized, isAuthenticated]);
 
   return (
     <View style={[styles.container, { backgroundColor: background }]}>

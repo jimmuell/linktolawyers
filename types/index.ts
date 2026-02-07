@@ -78,17 +78,22 @@ export interface Database {
         Row: Profile;
         Insert: ProfileInsert;
         Update: ProfileUpdate;
+        Relationships: [];
       };
       attorney_profiles: {
         Row: AttorneyProfile;
         Insert: AttorneyProfileInsert;
         Update: AttorneyProfileUpdate;
+        Relationships: [];
       };
       push_tokens: {
         Row: PushToken;
         Insert: PushTokenInsert;
         Update: PushTokenUpdate;
+        Relationships: [];
       };
     };
+    Views: {};
+    Functions: {};
   };
 }
