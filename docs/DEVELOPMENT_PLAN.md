@@ -35,13 +35,13 @@
 
 ### 1.3 Theme & Design System
 
-- [ ] Create theme context with light/dark/system modes
-- [ ] Implement theme persistence with AsyncStorage
-- [ ] Define color palette constants
-- [ ] Create base typography styles
-- [ ] Create reusable Button component
-- [ ] Create reusable TextInput component
-- [ ] Create reusable Card component
+- [x] Create theme context with light/dark/system modes
+- [x] Implement theme persistence with AsyncStorage
+- [x] Define color palette constants
+- [x] Create base typography styles
+- [x] Create reusable Button component
+- [x] Create reusable TextInput component
+- [x] Create reusable Card component
 
 ### 1.4 Authentication Screens
 
@@ -498,7 +498,7 @@ npm run lint       # Run ESLint
 
 ### Key Files
 - `app/_layout.tsx` - Root navigation
-- `contexts/theme.tsx` - Theme provider
+- `contexts/theme-context.tsx` - Theme provider
 - `lib/supabase.ts` - Supabase client
 - `types/index.ts` - TypeScript types
 - `lib/validators.ts` - Zod schemas
