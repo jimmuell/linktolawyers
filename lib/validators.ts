@@ -12,7 +12,7 @@ export const registerSchema = z
     confirmPassword: z.string(),
     fullName: z.string().min(1, 'Full name is required'),
     role: z.enum(['client', 'attorney', 'admin'], {
-      required_error: 'Please select a role',
+      error: 'Please select a role',
     }),
   })
   .refine((data) => data.password === data.confirmPassword, {
