@@ -1,10 +1,12 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, SafeAreaView, StyleSheet, View } from 'react-native';
+import Constants from 'expo-constants';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FilterBar } from '@/components/ui/filter-bar';
+import { ProfileButton } from '@/components/ui/profile-button';
 import { RequestCard } from '@/components/ui/request-card';
 import { Colors } from '@/constants/theme';
 import { Spacing } from '@/constants/typography';
@@ -22,7 +24,7 @@ export default function BrowseScreen() {
   const theme = useColorScheme() ?? 'light';
   const colors = Colors[theme];
   const router = useRouter();
-  const [filters, setFilters] = useState<BrowseFilters>({});
+  const [filters, setFilters] = useState<BrowseFilters>({ sort: 'newest' });
 
   const { data: requests, isLoading, refetch, isRefetching } = useBrowseRequests(filters);
   const { data: savedIds } = useSavedRequests();
@@ -52,9 +54,10 @@ export default function BrowseScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+    <View style={[styles.safe, { backgroundColor: colors.background, paddingTop: Math.max(Constants.statusBarHeight, 50) }]}>
       <View style={[styles.header, { borderBottomColor: colors.separator }]}>
         <ThemedText style={styles.title}>Browse Requests</ThemedText>
+        <ProfileButton />
       </View>
 
       <FilterBar filters={filters} onChange={setFilters} />
@@ -90,7 +93,7 @@ export default function BrowseScreen() {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -99,6 +102,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md,
@@ -107,6 +113,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
+    paddingTop: Spacing.md,
   },
   center: {
     flex: 1,

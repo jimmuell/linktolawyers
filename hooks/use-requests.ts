@@ -288,7 +288,9 @@ export function useBrowseRequests(filters: BrowseFilters) {
         .from('requests')
         .select('*, profiles!client_id(full_name, avatar_url)' as '*')
         .neq('status', 'draft')
-        .neq('status', 'cancelled');
+        .neq('status', 'cancelled')
+        .neq('status', 'accepted')
+        .neq('status', 'closed');
 
       if (filters.practiceArea) {
         query = query.eq('practice_area', filters.practiceArea);

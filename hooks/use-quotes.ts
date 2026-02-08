@@ -173,21 +173,47 @@ export function useWithdrawQuote() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data, error } = await supabase
+      // Fetch the quote first so we have the request_id for status revert
+      const { data: quoteRow, error: fetchError } = await supabase
         .from('quotes')
-        .update({ status: 'withdrawn', updated_at: new Date().toISOString() } as never)
+        .select('id, request_id')
         .eq('id', id)
-        .select()
         .single();
 
-      if (error) throw error;
-      return data as Quote;
+      if (fetchError) throw fetchError;
+      const quote = quoteRow as unknown as { id: string; request_id: string };
+
+      // Count other quotes (excluding the one being withdrawn) BEFORE deleting
+      const { count } = await supabase
+        .from('quotes')
+        .select('*', { count: 'exact', head: true })
+        .eq('request_id', quote.request_id)
+        .neq('id', id);
+
+      // Revert request status BEFORE deleting the quote (RLS needs the quote to exist)
+      const newStatus = (count ?? 0) > 0 ? 'quoted' : 'pending';
+      await supabase
+        .from('requests')
+        .update({ status: newStatus, updated_at: new Date().toISOString() } as never)
+        .eq('id', quote.request_id);
+
+      // Delete the quote row
+      const { error: deleteError } = await supabase
+        .from('quotes')
+        .delete()
+        .eq('id', id)
+        .eq('attorney_id', userId!);
+
+      if (deleteError) throw deleteError;
+
+      return { id, request_id: quote.request_id };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: quoteKeys.attorneyList(userId ?? '') });
       queryClient.invalidateQueries({ queryKey: quoteKeys.detail(data.id) });
       queryClient.invalidateQueries({ queryKey: quoteKeys.requestQuotes(data.request_id) });
       queryClient.invalidateQueries({ queryKey: quoteKeys.myQuoteForRequest(data.request_id, userId ?? '') });
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
     },
   });
 }
