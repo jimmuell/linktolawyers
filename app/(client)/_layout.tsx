@@ -20,6 +20,10 @@ export default function ClientLayout() {
         name="quotes/[quoteId]"
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="cases/[id]"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }

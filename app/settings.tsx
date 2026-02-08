@@ -49,7 +49,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: background }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <MaterialIcons name="arrow-back" size={26} color={textColor} />
+          <MaterialIcons name="close" size={26} color={textColor} />
         </Pressable>
         <Text style={[Typography.headlineLarge, { color: textColor }]}>Settings</Text>
         <View style={{ width: 26 }} />

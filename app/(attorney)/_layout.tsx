@@ -20,6 +20,10 @@ export default function AttorneyLayout() {
         name="quotes/templates"
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="cases/[id]"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }

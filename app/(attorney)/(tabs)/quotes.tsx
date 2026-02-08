@@ -1,10 +1,12 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
+import Constants from 'expo-constants';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ProfileButton } from '@/components/ui/profile-button';
 import { QuoteCard } from '@/components/ui/quote-card';
 import { Colors } from '@/constants/theme';
 import { Radii, Spacing } from '@/constants/typography';
@@ -37,12 +39,10 @@ export default function QuotesScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+    <View style={[styles.safe, { backgroundColor: colors.background, paddingTop: Math.max(Constants.statusBarHeight, 50) }]}>
       <View style={[styles.header, { borderBottomColor: colors.separator }]}>
         <ThemedText style={styles.title}>Your Quotes</ThemedText>
-        <Pressable onPress={() => router.push('/(attorney)/quotes/templates')} hitSlop={8}>
-          <MaterialIcons name="content-copy" size={24} color={colors.textSecondary} />
-        </Pressable>
+        <ProfileButton />
       </View>
 
       <ScrollView
@@ -71,6 +71,17 @@ export default function QuotesScreen() {
             </Pressable>
           );
         })}
+
+        <View style={[styles.filterDivider, { backgroundColor: colors.separator }]} />
+
+        <Pressable
+          style={[styles.templateChip, { borderColor: colors.border }]}
+          onPress={() => router.push('/(attorney)/quotes/templates')}>
+          <MaterialIcons name="content-copy" size={14} color={colors.textSecondary} />
+          <ThemedText style={[styles.filterText, { color: colors.textSecondary }]}>
+            Templates
+          </ThemedText>
+        </Pressable>
       </ScrollView>
 
       {isLoading && !quotes ? (
@@ -102,7 +113,7 @@ export default function QuotesScreen() {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -122,6 +133,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
+    paddingTop: Spacing.md,
   },
   filterScroll: {
     flexGrow: 0,
@@ -141,6 +153,20 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  filterDivider: {
+    width: 1,
+    height: 20,
+    alignSelf: 'center',
+  },
+  templateChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radii.full,
+    borderWidth: 1,
   },
   center: {
     flex: 1,

@@ -4,42 +4,33 @@ import Constants from 'expo-constants';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { CaseCard } from '@/components/ui/case-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProfileButton } from '@/components/ui/profile-button';
-import { RequestCard } from '@/components/ui/request-card';
 import { Colors } from '@/constants/theme';
 import { Radii, Spacing } from '@/constants/typography';
+import { useCases } from '@/hooks/use-cases';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAcceptedQuotes } from '@/hooks/use-quotes';
-import { useClientRequests } from '@/hooks/use-requests';
-import type { Request, RequestStatus } from '@/types';
+import type { CaseWithDetails } from '@/types';
 
-const STATUS_TABS: { label: string; value: RequestStatus | undefined }[] = [
+const FILTER_TABS: { label: string; value: 'accepted' | 'closed' | 'archived' | undefined }[] = [
   { label: 'All', value: undefined },
-  { label: 'Drafts', value: 'draft' },
-  { label: 'Pending', value: 'pending' },
-  { label: 'Quoted', value: 'quoted' },
-  { label: 'Accepted', value: 'accepted' },
+  { label: 'Active', value: 'accepted' },
   { label: 'Closed', value: 'closed' },
+  { label: 'Archived', value: 'archived' },
 ];
 
-export default function RequestsScreen() {
+export default function AttorneyCasesScreen() {
   const theme = useColorScheme() ?? 'light';
   const colors = Colors[theme];
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<RequestStatus | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<'accepted' | 'closed' | 'archived' | undefined>(undefined);
 
-  const { data: requests, isLoading, refetch, isRefetching } = useClientRequests(statusFilter);
-  const showAcceptedQuotes = statusFilter === 'accepted' || statusFilter === 'closed';
-  const { data: acceptedQuotesMap } = useAcceptedQuotes();
+  const { data: cases, isLoading, refetch, isRefetching } = useCases('attorney', statusFilter);
 
-  const handleNewRequest = useCallback(() => {
-    router.push('/(client)/requests/new');
-  }, [router]);
-
-  const handleRequestPress = useCallback(
-    (request: Request) => {
-      router.push(`/(client)/requests/${request.id}`);
+  const handleCasePress = useCallback(
+    (caseData: CaseWithDetails) => {
+      router.push(`/(attorney)/cases/${caseData.request.id}`);
     },
     [router],
   );
@@ -47,21 +38,12 @@ export default function RequestsScreen() {
   return (
     <View style={[styles.safe, { backgroundColor: colors.background, paddingTop: Math.max(Constants.statusBarHeight, 50) }]}>
       <View style={[styles.header, { borderBottomColor: colors.separator }]}>
-        <ThemedText style={styles.title}>Your Requests</ThemedText>
-        <View style={styles.headerRight}>
-          <Pressable
-            style={[styles.newButton, { backgroundColor: colors.primary }]}
-            onPress={handleNewRequest}>
-            <ThemedText style={[styles.newButtonText, { color: colors.primaryForeground }]}>
-              + New
-            </ThemedText>
-          </Pressable>
-          <ProfileButton />
-        </View>
+        <ThemedText style={styles.title}>Your Cases</ThemedText>
+        <ProfileButton />
       </View>
 
       <View style={styles.filterRow}>
-        {STATUS_TABS.map((tab) => {
+        {FILTER_TABS.map((tab) => {
           const isActive = statusFilter === tab.value;
           return (
             <Pressable
@@ -84,34 +66,27 @@ export default function RequestsScreen() {
         })}
       </View>
 
-      {isLoading && !requests ? (
+      {isLoading && !cases ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
-          data={requests}
-          keyExtractor={(item) => item.id}
+          data={cases}
+          keyExtractor={(item) => item.request.id}
           renderItem={({ item }) => (
-            <RequestCard
-              request={item}
-              variant="client"
-              onPress={() => handleRequestPress(item)}
-              acceptedQuote={showAcceptedQuotes ? acceptedQuotesMap?.get(item.id) : undefined}
-            />
+            <CaseCard caseData={item} onPress={() => handleCasePress(item)} />
           )}
-          contentContainerStyle={requests?.length ? styles.list : styles.emptyList}
+          contentContainerStyle={cases?.length ? styles.list : styles.emptyList}
           ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
           }
           ListEmptyComponent={
             <EmptyState
-              icon="description"
-              title="No requests yet"
-              description="Create your first request to get matched with attorneys."
-              actionLabel="Create Request"
-              onAction={handleNewRequest}
+              icon="work"
+              title="No cases yet"
+              description="When a client accepts your quote, it will appear here as an active case."
             />
           }
         />
@@ -133,24 +108,10 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
   title: {
     fontSize: 28,
     fontWeight: '700',
     paddingTop: Spacing.md,
-  },
-  newButton: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radii.md,
-  },
-  newButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
   },
   filterRow: {
     flexDirection: 'row',

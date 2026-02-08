@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 
@@ -26,17 +27,14 @@ export default function AttorneyTabLayout() {
       <Tabs.Screen
         name="browse"
         options={{
-          title: 'Browse',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="magnifyingglass" color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
         name="quotes"
         options={{
           title: 'Quotes',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="text.quote" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="pricetag" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -49,10 +47,10 @@ export default function AttorneyTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="cases"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          title: 'Cases',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="briefcase.fill" color={color} />,
         }}
       />
     </Tabs>

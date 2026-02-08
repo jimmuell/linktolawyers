@@ -4,6 +4,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { Colors } from '@/constants/theme';
@@ -85,23 +86,30 @@ function ProtectedRouteGuard({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <NavigationThemeWrapper>
-            <ProtectedRouteGuard>
-              <Stack>
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(client)" options={{ headerShown: false }} />
-                <Stack.Screen name="(attorney)" options={{ headerShown: false }} />
-                <Stack.Screen name="settings" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-              </Stack>
-            </ProtectedRouteGuard>
-          </NavigationThemeWrapper>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <NavigationThemeWrapper>
+              <ProtectedRouteGuard>
+                <Stack>
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(client)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(attorney)" options={{ headerShown: false }} />
+                  <Stack.Screen name="profile" options={{ presentation: 'modal', headerShown: false }} />
+                  <Stack.Screen name="edit-basic-info" options={{ presentation: 'modal', headerShown: false }} />
+                  <Stack.Screen name="edit-attorney-profile" options={{ presentation: 'modal', headerShown: false }} />
+                  <Stack.Screen name="availability" options={{ presentation: 'modal', headerShown: false }} />
+                  <Stack.Screen name="notifications" options={{ presentation: 'modal', headerShown: false }} />
+                  <Stack.Screen name="settings" options={{ presentation: 'modal', headerShown: false }} />
+                  <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                </Stack>
+              </ProtectedRouteGuard>
+            </NavigationThemeWrapper>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

@@ -123,6 +123,12 @@ export interface HiddenRequest {
   created_at: string;
 }
 
+export interface ArchivedCase {
+  attorney_id: string;
+  request_id: string;
+  created_at: string;
+}
+
 // Request with joined data for display
 export interface RequestWithClient extends Request {
   profiles: Pick<Profile, 'full_name' | 'avatar_url'> | null;
@@ -192,6 +198,41 @@ export type QuoteTemplateInsert = Omit<QuoteTemplate, 'id' | 'created_at' | 'upd
   updated_at?: string;
 };
 
+// Case management types
+export interface CaseNote {
+  id: string;
+  request_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+}
+
+export type CaseNoteInsert = Omit<CaseNote, 'id' | 'created_at'> & {
+  id?: string;
+  created_at?: string;
+};
+
+export interface Review {
+  id: string;
+  request_id: string;
+  client_id: string;
+  attorney_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}
+
+export type ReviewInsert = Omit<Review, 'id' | 'created_at'> & {
+  id?: string;
+  created_at?: string;
+};
+
+export interface CaseWithDetails {
+  request: Request;
+  quote: Quote;
+  otherParty: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>;
+}
+
 export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -244,6 +285,12 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      archived_cases: {
+        Row: ArchivedCase;
+        Insert: Omit<ArchivedCase, 'created_at'>;
+        Update: never;
+        Relationships: [];
+      };
       quotes: {
         Row: Quote;
         Insert: QuoteInsert;
@@ -254,6 +301,18 @@ export interface Database {
         Row: QuoteTemplate;
         Insert: QuoteTemplateInsert;
         Update: Partial<Omit<QuoteTemplate, 'id' | 'attorney_id' | 'created_at'>>;
+        Relationships: [];
+      };
+      case_notes: {
+        Row: CaseNote;
+        Insert: CaseNoteInsert;
+        Update: never;
+        Relationships: [];
+      };
+      reviews: {
+        Row: Review;
+        Insert: ReviewInsert;
+        Update: never;
         Relationships: [];
       };
     };

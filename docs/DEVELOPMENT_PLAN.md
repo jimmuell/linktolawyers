@@ -328,22 +328,22 @@
 - [ ] Create `cases` table
 - [ ] Create `case_milestones` table
 - [ ] Create `case_documents` table
-- [ ] Create `case_notes` table
+- [x] Create `case_notes` table
 - [ ] Create `case_activities` table
-- [ ] Create `reviews` table
+- [x] Create `reviews` table
 - [ ] Create `platform_config` table
-- [ ] Set up RLS policies for cases
+- [x] Set up RLS policies for cases
 
 ### 6.2 Case Management
 
-- [ ] Auto-create case on quote acceptance
+- [x] Auto-create case on quote acceptance
 - [ ] Generate unique case number
-- [ ] `(tabs)/cases/index` - Cases list
-- [ ] Active/Completed tabs
+- [x] `(tabs)/cases/index` - Cases list
+- [x] Active/Completed tabs
 - [ ] Case search
-- [ ] `(tabs)/cases/[id]` - Case detail view
-- [ ] Case information card
-- [ ] Participants display
+- [x] `(tabs)/cases/[id]` - Case detail view
+- [x] Case information card
+- [x] Participants display
 
 ### 6.3 Case Timeline
 
@@ -365,19 +365,19 @@
 
 ### 6.5 Case Status & Milestones (Attorney)
 
-- [ ] Update case status
+- [x] Update case status
 - [ ] Add milestones
 - [ ] Mark milestones complete
-- [ ] Add case notes (private/shared)
-- [ ] Mark case complete
+- [x] Add case notes (private/shared)
+- [x] Mark case complete
 - [ ] Final document upload
 
 ### 6.6 Reviews
 
-- [ ] `(tabs)/cases/[id]/review` - Leave review screen
-- [ ] Star rating (1-5)
-- [ ] Written review text
-- [ ] Submit review
+- [x] `(tabs)/cases/[id]/review` - Leave review screen
+- [x] Star rating (1-5)
+- [x] Written review text
+- [x] Submit review
 - [ ] View received reviews (attorney profile)
 - [ ] Average rating display
 

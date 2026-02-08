@@ -25,6 +25,8 @@ const MAPPING = {
   'text.quote': 'format-quote',
   'bookmark.fill': 'bookmark',
   'bookmark': 'bookmark-border',
+  'briefcase.fill': 'work',
+  'square.and.pencil': 'edit',
   'hammer.fill': 'gavel',
   'location.fill': 'location-on',
   'plus': 'add',
