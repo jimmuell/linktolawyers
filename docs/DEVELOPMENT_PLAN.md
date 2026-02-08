@@ -133,7 +133,8 @@
 - [x] Filter by practice area
 - [x] Filter by location
 - [x] Filter by budget range
-- [x] Sort options (newest, budget, urgency)
+- [x] Sort options (newest default, budget, urgency)
+- [x] Exclude accepted/closed requests from browse (cases only in Cases tab)
 - [x] Save/bookmark requests
 - [x] Hide/dismiss requests
 - [x] Quick quote button (navigates to quote form)
@@ -171,7 +172,7 @@
 - [x] Quote status tracking (pending, viewed, accepted, declined, expired)
 - [x] `(attorney)/quotes/[id]` - Quote detail view
 - [x] Edit/revise quote
-- [x] Withdraw quote
+- [x] Withdraw quote (deletes row, reverts request status to pending/quoted)
 - [x] Quote templates system
 - [x] `(attorney)/quotes/templates` - Manage templates
 
@@ -339,11 +340,14 @@
 - [x] Auto-create case on quote acceptance
 - [ ] Generate unique case number
 - [x] `(tabs)/cases/index` - Cases list
-- [x] Active/Completed tabs
+- [x] Active/Completed/Archived filter tabs
 - [ ] Case search
 - [x] `(tabs)/cases/[id]` - Case detail view
 - [x] Case information card
 - [x] Participants display
+- [x] Archive closed cases (attorney)
+- [x] Unarchive/activate archived cases (attorney)
+- [x] Delete archived cases with quote cleanup and status revert (attorney)
 
 ### 6.3 Case Timeline
 
