@@ -118,20 +118,26 @@ export function useCreateQuote() {
       terms: string | null;
       valid_until: string;
     }) => {
+      const payload = { ...input, attorney_id: userId! };
+      console.log('[useCreateQuote] inserting:', JSON.stringify(payload));
       const { data, error } = await supabase
         .from('quotes')
-        .insert({ ...input, attorney_id: userId! } as never)
+        .insert(payload as never)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useCreateQuote] error:', JSON.stringify(error));
+        throw error;
+      }
       return data as Quote;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: quoteKeys.attorneyList(userId ?? '') });
       queryClient.invalidateQueries({ queryKey: quoteKeys.myQuoteForRequest(data.request_id, userId ?? '') });
       queryClient.invalidateQueries({ queryKey: quoteKeys.requestQuotes(data.request_id) });
-      queryClient.invalidateQueries({ queryKey: ['requests', 'detail', data.request_id] });
+      // Invalidate all request queries so status updates (from DB trigger) are reflected
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
     },
   });
 }
@@ -287,6 +293,50 @@ export function useMarkQuoteViewed() {
   });
 }
 
+// ─── Accepted quotes for client ─────────────────────────────────
+
+export interface AcceptedQuoteInfo {
+  attorney_name: string | null;
+  pricing_type: Quote['pricing_type'];
+  fee_amount: number;
+  estimated_hours: number | null;
+}
+
+export function useAcceptedQuotes() {
+  const userId = useAuthStore((s) => s.user?.id);
+
+  return useQuery({
+    queryKey: [...quoteKeys.all, 'accepted', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('*, requests!request_id(id, client_id), profiles!attorney_id(full_name, avatar_url)' as '*')
+        .eq('status', 'accepted')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      type QuoteRow = Quote & {
+        requests: { id: string; client_id: string } | null;
+        profiles: { full_name: string | null; avatar_url: string | null } | null;
+      };
+      const filtered = (data as unknown as QuoteRow[]).filter((q) => q.requests?.client_id === userId);
+      const map = new Map<string, AcceptedQuoteInfo>();
+      for (const q of filtered) {
+        if (q.requests) {
+          map.set(q.requests.id, {
+            attorney_name: q.profiles?.full_name ?? null,
+            pricing_type: q.pricing_type,
+            fee_amount: q.fee_amount,
+            estimated_hours: q.estimated_hours,
+          });
+        }
+      }
+      return map;
+    },
+    enabled: !!userId,
+  });
+}
+
 // ─── Template hooks ───────────────────────────────────────────────
 
 export function useQuoteTemplates() {
@@ -317,6 +367,28 @@ export function useSaveTemplate() {
       const { data, error } = await supabase
         .from('quote_templates')
         .insert({ ...input, attorney_id: userId! } as never)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as QuoteTemplate;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: quoteKeys.templates(userId ?? '') });
+    },
+  });
+}
+
+export function useUpdateTemplate() {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<Omit<QuoteTemplate, 'id' | 'attorney_id' | 'created_at'>>) => {
+      const { data, error } = await supabase
+        .from('quote_templates')
+        .update({ ...updates, updated_at: new Date().toISOString() } as never)
+        .eq('id', id)
         .select()
         .single();
 

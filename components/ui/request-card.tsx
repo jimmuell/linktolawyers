@@ -2,12 +2,14 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { formatFee } from '@/components/ui/quote-card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { PRACTICE_AREA_MAP } from '@/constants/practice-areas';
 import { Colors } from '@/constants/theme';
 import { Elevation, Radii, Spacing } from '@/constants/typography';
 import { US_STATE_MAP } from '@/constants/us-states';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import type { AcceptedQuoteInfo } from '@/hooks/use-quotes';
 import type { Request, RequestWithClient } from '@/types';
 
 function formatTimeAgo(dateString: string): string {
@@ -38,9 +40,10 @@ interface RequestCardProps {
   onPress?: () => void;
   isSaved?: boolean;
   onToggleSave?: () => void;
+  acceptedQuote?: AcceptedQuoteInfo;
 }
 
-export function RequestCard({ request, variant, onPress, isSaved, onToggleSave }: RequestCardProps) {
+export function RequestCard({ request, variant, onPress, isSaved, onToggleSave, acceptedQuote }: RequestCardProps) {
   const theme = useColorScheme() ?? 'light';
   const colors = Colors[theme];
   const budget = formatBudget(request.budget_min, request.budget_max);
@@ -95,6 +98,23 @@ export function RequestCard({ request, variant, onPress, isSaved, onToggleSave }
       {budget && (
         <ThemedText style={[styles.budget, { color: colors.text }]}>{budget}</ThemedText>
       )}
+
+      {acceptedQuote && (
+        <>
+          <View style={[styles.divider, { backgroundColor: colors.separator }]} />
+          <View style={styles.acceptedRow}>
+            <MaterialIcons name="check-circle" size={16} color={colors.success} />
+            <View style={styles.acceptedInfo}>
+              <ThemedText style={[styles.acceptedLabel, { color: colors.success }]}>
+                Accepted Quote
+              </ThemedText>
+              <ThemedText style={styles.acceptedText} numberOfLines={1}>
+                {acceptedQuote.attorney_name ?? 'Attorney'} — {formatFee(acceptedQuote.pricing_type, acceptedQuote.fee_amount, acceptedQuote.estimated_hours)}
+              </ThemedText>
+            </View>
+          </View>
+        </>
+      )}
     </Pressable>
   );
 }
@@ -144,5 +164,28 @@ const styles = StyleSheet.create({
   budget: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: Spacing.xs,
+  },
+  acceptedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  acceptedInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  acceptedLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  acceptedText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });

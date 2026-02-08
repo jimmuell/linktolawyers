@@ -1,3 +1,4 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
@@ -39,6 +40,9 @@ export default function QuotesScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.separator }]}>
         <ThemedText style={styles.title}>Your Quotes</ThemedText>
+        <Pressable onPress={() => router.push('/(attorney)/quotes/templates')} hitSlop={8}>
+          <MaterialIcons name="content-copy" size={24} color={colors.textSecondary} />
+        </Pressable>
       </View>
 
       <ScrollView

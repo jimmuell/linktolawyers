@@ -8,6 +8,7 @@ import { RequestCard } from '@/components/ui/request-card';
 import { Colors } from '@/constants/theme';
 import { Radii, Spacing } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAcceptedQuotes } from '@/hooks/use-quotes';
 import { useClientRequests } from '@/hooks/use-requests';
 import type { Request, RequestStatus } from '@/types';
 
@@ -27,6 +28,8 @@ export default function RequestsScreen() {
   const [statusFilter, setStatusFilter] = useState<RequestStatus | undefined>(undefined);
 
   const { data: requests, isLoading, refetch, isRefetching } = useClientRequests(statusFilter);
+  const showAcceptedQuotes = statusFilter === 'accepted' || statusFilter === 'closed';
+  const { data: acceptedQuotesMap } = useAcceptedQuotes();
 
   const handleNewRequest = useCallback(() => {
     router.push('/(client)/requests/new');
@@ -89,6 +92,7 @@ export default function RequestsScreen() {
               request={item}
               variant="client"
               onPress={() => handleRequestPress(item)}
+              acceptedQuote={showAcceptedQuotes ? acceptedQuotesMap?.get(item.id) : undefined}
             />
           )}
           contentContainerStyle={requests?.length ? styles.list : styles.emptyList}

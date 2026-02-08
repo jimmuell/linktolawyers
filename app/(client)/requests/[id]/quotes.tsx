@@ -30,7 +30,15 @@ export default function RequestQuotesScreen() {
           <MaterialIcons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <ThemedText style={styles.headerTitle}>Quotes</ThemedText>
-        <View style={{ width: 24 }} />
+        {quotes && quotes.length >= 2 ? (
+          <Pressable
+            onPress={() => router.push(`/(client)/requests/${requestId}/compare`)}
+            hitSlop={8}>
+            <MaterialIcons name="compare-arrows" size={24} color={colors.primary} />
+          </Pressable>
+        ) : (
+          <View style={{ width: 24 }} />
+        )}
       </View>
 
       {isLoading && !quotes ? (

@@ -13,6 +13,10 @@ export default function ClientLayout() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="requests/success"
+        options={{ headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
         name="quotes/[quoteId]"
         options={{ headerShown: false }}
       />

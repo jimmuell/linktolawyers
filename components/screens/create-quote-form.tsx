@@ -23,17 +23,18 @@ import { PRACTICE_AREA_MAP } from '@/constants/practice-areas';
 import { Colors } from '@/constants/theme';
 import { Radii, Spacing } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useCreateQuote, useQuoteTemplates, useSaveTemplate } from '@/hooks/use-quotes';
+import { useCreateQuote, useQuoteTemplates, useSaveTemplate, useUpdateQuote } from '@/hooks/use-quotes';
 import { useRequest } from '@/hooks/use-requests';
 import { quoteCreateSchema, type QuoteCreateFormData } from '@/lib/validators';
 import { formatFee } from '@/components/ui/quote-card';
-import type { PricingType, QuoteTemplate } from '@/types';
+import type { PricingType, Quote, QuoteTemplate } from '@/types';
 
 interface CreateQuoteFormProps {
   requestId: string;
+  editQuote?: Quote;
 }
 
-export function CreateQuoteForm({ requestId }: CreateQuoteFormProps) {
+export function CreateQuoteForm({ requestId, editQuote }: CreateQuoteFormProps) {
   const theme = useColorScheme() ?? 'light';
   const colors = Colors[theme];
   const router = useRouter();
@@ -42,33 +43,54 @@ export function CreateQuoteForm({ requestId }: CreateQuoteFormProps) {
   const [templateName, setTemplateName] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
 
+  const isEditing = !!editQuote;
+
   const { data: request } = useRequest(requestId);
   const createQuote = useCreateQuote();
+  const updateQuote = useUpdateQuote();
   const saveTemplate = useSaveTemplate();
   const { data: templates } = useQuoteTemplates();
 
+  const getEditDaysRemaining = () => {
+    if (!editQuote) return 30;
+    const validUntil = new Date(editQuote.valid_until);
+    const now = new Date();
+    const diff = Math.ceil((validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(diff, 7);
+  };
+
   const form = useForm<QuoteCreateFormData>({
     resolver: zodResolver(quoteCreateSchema),
-    defaultValues: __DEV__
+    defaultValues: editQuote
       ? {
-          pricingType: 'flat_fee',
-          feeAmount: 3500,
-          estimatedHours: null,
-          scopeOfWork:
-            'Full legal representation for the matter described, including document preparation, filing, correspondence with opposing counsel, and court appearances as needed.',
-          estimatedTimeline: '4-6 weeks',
-          terms: 'Payment due upon engagement. 50% upfront, 50% upon completion.',
-          validUntilDays: 30,
+          pricingType: editQuote.pricing_type,
+          feeAmount: editQuote.fee_amount,
+          estimatedHours: editQuote.estimated_hours,
+          scopeOfWork: editQuote.scope_of_work,
+          estimatedTimeline: editQuote.estimated_timeline,
+          terms: editQuote.terms,
+          validUntilDays: getEditDaysRemaining(),
         }
-      : {
-          pricingType: 'flat_fee' as const,
-          feeAmount: 0,
-          estimatedHours: null,
-          scopeOfWork: '',
-          estimatedTimeline: null,
-          terms: null,
-          validUntilDays: 30,
-        },
+      : __DEV__
+        ? {
+            pricingType: 'flat_fee',
+            feeAmount: 3500,
+            estimatedHours: null,
+            scopeOfWork:
+              'Full legal representation for the matter described, including document preparation, filing, correspondence with opposing counsel, and court appearances as needed.',
+            estimatedTimeline: '4-6 weeks',
+            terms: 'Payment due upon engagement. 50% upfront, 50% upon completion.',
+            validUntilDays: 30,
+          }
+        : {
+            pricingType: 'flat_fee' as const,
+            feeAmount: 0,
+            estimatedHours: null,
+            scopeOfWork: '',
+            estimatedTimeline: null,
+            terms: null,
+            validUntilDays: 30,
+          },
     mode: 'onTouched',
   });
 
@@ -102,16 +124,30 @@ export function CreateQuoteForm({ requestId }: CreateQuoteFormProps) {
     validUntil.setDate(validUntil.getDate() + values.validUntilDays);
 
     try {
-      await createQuote.mutateAsync({
-        request_id: requestId,
-        pricing_type: values.pricingType,
-        fee_amount: values.feeAmount,
-        estimated_hours: values.estimatedHours,
-        scope_of_work: values.scopeOfWork,
-        estimated_timeline: values.estimatedTimeline,
-        terms: values.terms,
-        valid_until: validUntil.toISOString(),
-      });
+      if (isEditing) {
+        await updateQuote.mutateAsync({
+          id: editQuote.id,
+          pricing_type: values.pricingType,
+          fee_amount: values.feeAmount,
+          estimated_hours: values.estimatedHours,
+          scope_of_work: values.scopeOfWork,
+          estimated_timeline: values.estimatedTimeline,
+          terms: values.terms,
+          valid_until: validUntil.toISOString(),
+          status: 'submitted',
+        });
+      } else {
+        await createQuote.mutateAsync({
+          request_id: requestId,
+          pricing_type: values.pricingType,
+          fee_amount: values.feeAmount,
+          estimated_hours: values.estimatedHours,
+          scope_of_work: values.scopeOfWork,
+          estimated_timeline: values.estimatedTimeline,
+          terms: values.terms,
+          valid_until: validUntil.toISOString(),
+        });
+      }
 
       if (saveAsTemplate && templateName.trim()) {
         await saveTemplate.mutateAsync({
@@ -127,12 +163,18 @@ export function CreateQuoteForm({ requestId }: CreateQuoteFormProps) {
 
       setShowPreview(false);
       router.back();
-    } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to submit quote');
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? String((error as { message: unknown }).message)
+            : isEditing ? 'Failed to update quote' : 'Failed to submit quote';
+      Alert.alert('Error', msg);
     }
-  }, [form, requestId, createQuote, saveAsTemplate, templateName, saveTemplate, router]);
+  }, [form, requestId, createQuote, updateQuote, saveAsTemplate, templateName, saveTemplate, router, isEditing, editQuote]);
 
-  const isSubmitting = createQuote.isPending;
+  const isSubmitting = createQuote.isPending || updateQuote.isPending;
 
   return (
     <FormProvider {...form}>
@@ -141,7 +183,7 @@ export function CreateQuoteForm({ requestId }: CreateQuoteFormProps) {
           <Pressable onPress={() => router.back()} hitSlop={8}>
             <MaterialIcons name="close" size={24} color={colors.text} />
           </Pressable>
-          <ThemedText style={styles.headerTitle}>Submit Quote</ThemedText>
+          <ThemedText style={styles.headerTitle}>{isEditing ? 'Revise Quote' : 'Submit Quote'}</ThemedText>
           <View style={{ width: 24 }} />
         </View>
 
@@ -471,7 +513,7 @@ export function CreateQuoteForm({ requestId }: CreateQuoteFormProps) {
                   <ActivityIndicator size="small" color={colors.primaryForeground} />
                 ) : (
                   <ThemedText style={[styles.buttonText, { color: colors.primaryForeground }]}>
-                    Submit Quote
+                    {isEditing ? 'Update Quote' : 'Submit Quote'}
                   </ThemedText>
                 )}
               </Pressable>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { AttorneyProfileModal } from '@/components/ui/attorney-profile-modal';
 import { formatFee } from '@/components/ui/quote-card';
 import { QuoteStatusBadge } from '@/components/ui/quote-status-badge';
 import { PRICING_TYPE_MAP } from '@/constants/pricing-types';
@@ -35,6 +36,7 @@ export function QuoteDetailScreen({ quoteId, variant }: QuoteDetailScreenProps) 
   const markViewed = useMarkQuoteViewed();
   const [showDeclineReason, setShowDeclineReason] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
+  const [showAttorneyProfile, setShowAttorneyProfile] = useState(false);
 
   // Mark as viewed on mount (client variant)
   useEffect(() => {
@@ -154,15 +156,18 @@ export function QuoteDetailScreen({ quoteId, variant }: QuoteDetailScreenProps) 
 
         {/* Attorney info (client variant) */}
         {variant === 'client' && attorneyData && (
-          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Pressable
+            style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => setShowAttorneyProfile(true)}>
             <ThemedText style={[styles.sectionLabel, { color: colors.textSecondary }]}>Attorney</ThemedText>
             <View style={styles.attorneyRow}>
               <View style={[styles.avatar, { backgroundColor: colors.background }]}>
                 <MaterialIcons name="person" size={20} color={colors.textTertiary} />
               </View>
-              <ThemedText style={styles.attorneyName}>{attorneyData.full_name ?? 'Attorney'}</ThemedText>
+              <ThemedText style={[styles.attorneyName, { flex: 1 }]}>{attorneyData.full_name ?? 'Attorney'}</ThemedText>
+              <MaterialIcons name="chevron-right" size={20} color={colors.textTertiary} />
             </View>
-          </View>
+          </Pressable>
         )}
 
         {/* Request summary */}
@@ -237,6 +242,15 @@ export function QuoteDetailScreen({ quoteId, variant }: QuoteDetailScreenProps) 
         {/* Attorney Actions */}
         {variant === 'attorney' && (canEdit || canWithdraw) && (
           <View style={styles.actions}>
+            {canEdit && (
+              <Pressable
+                style={[styles.primaryActionButton, { backgroundColor: colors.primary }]}
+                onPress={() => router.push(`/(attorney)/quotes/${quote.id}/edit`)}>
+                <ThemedText style={[styles.primaryActionText, { color: colors.primaryForeground }]}>
+                  Edit Quote
+                </ThemedText>
+              </Pressable>
+            )}
             {canWithdraw && (
               <Pressable
                 style={[styles.actionButton, { borderColor: colors.error }]}
@@ -305,6 +319,12 @@ export function QuoteDetailScreen({ quoteId, variant }: QuoteDetailScreenProps) 
           </View>
         )}
       </ScrollView>
+
+      <AttorneyProfileModal
+        visible={showAttorneyProfile}
+        attorneyId={quote.attorney_id}
+        onClose={() => setShowAttorneyProfile(false)}
+      />
     </SafeAreaView>
   );
 }

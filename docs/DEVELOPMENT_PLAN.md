@@ -112,7 +112,7 @@
 - [x] Form validation with zod
 - [x] Draft saving functionality
 - [x] Request submission to Supabase
-- [ ] Success confirmation screen
+- [x] Success confirmation screen
 
 ### 2.3 Client - Request Management
 
@@ -120,8 +120,8 @@
 - [x] Status badges (draft, pending, quoted, etc.)
 - [x] Pull-to-refresh
 - [x] `(client)/requests/[id]` - Request detail view
-- [ ] Request status timeline visualization
-- [ ] Edit pending requests
+- [x] Request status timeline visualization
+- [x] Edit pending requests
 - [x] Cancel/withdraw requests
 - [x] Delete draft requests
 
@@ -170,21 +170,21 @@
 - [x] `(attorney)/quotes/index` - Submitted quotes dashboard
 - [x] Quote status tracking (pending, viewed, accepted, declined, expired)
 - [x] `(attorney)/quotes/[id]` - Quote detail view
-- [ ] Edit/revise quote
+- [x] Edit/revise quote
 - [x] Withdraw quote
 - [x] Quote templates system
-- [ ] `(attorney)/quotes/templates` - Manage templates
+- [x] `(attorney)/quotes/templates` - Manage templates
 
 ### 3.4 Client - Quote Review
 
 - [x] `(client)/requests/[id]/quotes` - Quotes list for request
 - [x] Quote card component (attorney info, price, status)
 - [x] `(client)/quotes/[quoteId]` - Quote detail
-- [ ] Attorney profile quick view
-- [ ] `(client)/requests/[id]/quotes/compare` - Side-by-side comparison
+- [x] Attorney profile quick view
+- [x] `(client)/requests/[id]/compare` - Side-by-side comparison
 - [x] Accept quote flow (confirmation modal, terms acceptance)
 - [x] Decline quote with optional reason
-- [ ] Accepted quotes history
+- [x] Accepted quotes history
 
 ### 3.5 Notifications (Phase 3)
 

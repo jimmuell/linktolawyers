@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Image, Linking, Platform, Pressable, SafeArea
 
 import { ThemedText } from '@/components/themed-text';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { StatusTimeline } from '@/components/ui/status-timeline';
 import { PRACTICE_AREA_MAP } from '@/constants/practice-areas';
 import { Colors } from '@/constants/theme';
 import { Radii, Spacing } from '@/constants/typography';
@@ -219,6 +220,8 @@ export function RequestDetailScreen({ requestId, variant, isSaved, onToggleSave 
           <ThemedText style={styles.requestTitle}>{request.title}</ThemedText>
         </View>
 
+        <StatusTimeline status={request.status} />
+
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <DetailRow label="Practice Area" value={PRACTICE_AREA_MAP[request.practice_area] || request.practice_area} />
           {location && <DetailRow label="Location" value={location} />}
@@ -315,6 +318,15 @@ export function RequestDetailScreen({ requestId, variant, isSaved, onToggleSave 
 
         {variant === 'client' && (
           <View style={styles.actions}>
+            {(request.status === 'draft' || request.status === 'pending') && (
+              <Pressable
+                style={[styles.primaryActionButton, { backgroundColor: colors.primary }]}
+                onPress={() => router.push(`/(client)/requests/${request.id}/edit`)}>
+                <ThemedText style={[styles.primaryActionText, { color: colors.primaryForeground }]}>
+                  Edit Request
+                </ThemedText>
+              </Pressable>
+            )}
             {(request.status === 'pending' || request.status === 'quoted') && (
               <Pressable
                 style={[styles.actionButton, { borderColor: colors.error }]}

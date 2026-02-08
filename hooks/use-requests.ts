@@ -145,6 +145,12 @@ export function useDeleteDraft() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Delete associated records first to avoid orphans
+      await supabase.from('quotes').delete().eq('request_id', id);
+      await supabase.from('request_attachments').delete().eq('request_id', id);
+      await supabase.from('saved_requests').delete().eq('request_id', id);
+      await supabase.from('hidden_requests').delete().eq('request_id', id);
+
       const { error } = await supabase
         .from('requests')
         .delete()
@@ -155,6 +161,7 @@ export function useDeleteDraft() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: requestKeys.clientList(userId ?? '') });
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
     },
   });
 }
@@ -165,6 +172,12 @@ export function useDeleteRequest() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Delete associated records first to avoid orphans
+      await supabase.from('quotes').delete().eq('request_id', id);
+      await supabase.from('request_attachments').delete().eq('request_id', id);
+      await supabase.from('saved_requests').delete().eq('request_id', id);
+      await supabase.from('hidden_requests').delete().eq('request_id', id);
+
       const { error } = await supabase
         .from('requests')
         .delete()
@@ -174,6 +187,7 @@ export function useDeleteRequest() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: requestKeys.clientList(userId ?? '') });
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
     },
   });
 }

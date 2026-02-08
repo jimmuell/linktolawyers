@@ -16,12 +16,12 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { Radii, Spacing } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useCreateRequest, useUploadAttachment } from '@/hooks/use-requests';
+import { useCreateRequest, useUpdateRequest, useUploadAttachment } from '@/hooks/use-requests';
 import {
   requestCreateSchema,
   type RequestCreateFormData,
 } from '@/lib/validators';
-import type { RequestStatus } from '@/types';
+import type { Request, RequestStatus } from '@/types';
 
 const TOTAL_STEPS = 6;
 
@@ -35,41 +35,58 @@ const STEP_FIELDS: (keyof RequestCreateFormData)[][] = [
   [], // review — full validation on submit
 ];
 
-export function CreateRequestWizard() {
+interface CreateRequestWizardProps {
+  editRequest?: Request;
+}
+
+export function CreateRequestWizard({ editRequest }: CreateRequestWizardProps = {}) {
   const theme = useColorScheme() ?? 'light';
   const colors = Colors[theme];
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [attachments, setAttachments] = useState<LocalAttachment[]>([]);
+  const isEditing = !!editRequest;
 
   const form = useForm<RequestCreateFormData>({
     resolver: zodResolver(requestCreateSchema),
-    defaultValues: __DEV__
+    defaultValues: editRequest
       ? {
-          practiceArea: 'immigration',
-          title: 'H-1B Work Visa Application Assistance',
-          description:
-            'I need help filing an H-1B work visa petition. My employer is sponsoring me and we need an attorney to prepare and file the petition with USCIS. Looking for someone experienced with H-1B cases, especially in the tech industry.',
-          state: 'CA',
-          city: 'San Francisco',
-          budgetMin: 2000,
-          budgetMax: 5000,
-          urgency: 'high' as const,
+          practiceArea: editRequest.practice_area,
+          title: editRequest.title,
+          description: editRequest.description,
+          state: editRequest.state,
+          city: editRequest.city,
+          budgetMin: editRequest.budget_min,
+          budgetMax: editRequest.budget_max,
+          urgency: editRequest.urgency,
         }
-      : {
-          practiceArea: '',
-          title: '',
-          description: '',
-          state: null,
-          city: null,
-          budgetMin: null,
-          budgetMax: null,
-          urgency: 'normal' as const,
-        },
+      : __DEV__
+        ? {
+            practiceArea: 'immigration',
+            title: 'H-1B Work Visa Application Assistance',
+            description:
+              'I need help filing an H-1B work visa petition. My employer is sponsoring me and we need an attorney to prepare and file the petition with USCIS. Looking for someone experienced with H-1B cases, especially in the tech industry.',
+            state: 'CA',
+            city: 'San Francisco',
+            budgetMin: 2000,
+            budgetMax: 5000,
+            urgency: 'high' as const,
+          }
+        : {
+            practiceArea: '',
+            title: '',
+            description: '',
+            state: null,
+            city: null,
+            budgetMin: null,
+            budgetMax: null,
+            urgency: 'normal' as const,
+          },
     mode: 'onTouched',
   });
 
   const createRequest = useCreateRequest();
+  const updateRequest = useUpdateRequest();
   const uploadAttachment = useUploadAttachment();
 
   const validateCurrentStep = useCallback(async () => {
@@ -101,7 +118,7 @@ export function CreateRequestWizard() {
 
       try {
         const values = form.getValues();
-        const request = await createRequest.mutateAsync({
+        const payload = {
           title: values.title,
           description: values.description,
           practice_area: values.practiceArea,
@@ -111,28 +128,38 @@ export function CreateRequestWizard() {
           budget_max: values.budgetMax,
           urgency: values.urgency,
           status,
-        });
+        };
 
-        // Upload attachments
-        for (const att of attachments) {
-          await uploadAttachment.mutateAsync({
-            requestId: request.id,
-            fileUri: att.uri,
-            fileName: att.fileName,
-            fileType: att.fileType,
-            fileSize: att.fileSize,
-          });
+        let requestId: string;
+
+        if (isEditing) {
+          const updated = await updateRequest.mutateAsync({ id: editRequest.id, ...payload });
+          requestId = updated.id;
+        } else {
+          const created = await createRequest.mutateAsync(payload);
+          requestId = created.id;
+
+          // Upload attachments (only for new requests)
+          for (const att of attachments) {
+            await uploadAttachment.mutateAsync({
+              requestId,
+              fileUri: att.uri,
+              fileName: att.fileName,
+              fileType: att.fileType,
+              fileSize: att.fileSize,
+            });
+          }
         }
 
-        router.back();
+        router.replace(`/(client)/requests/success?requestId=${requestId}&status=${status}`);
       } catch (error) {
-        Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create request');
+        Alert.alert('Error', error instanceof Error ? error.message : isEditing ? 'Failed to update request' : 'Failed to create request');
       }
     },
-    [form, createRequest, uploadAttachment, attachments, router],
+    [form, createRequest, updateRequest, uploadAttachment, attachments, router, isEditing, editRequest],
   );
 
-  const isSubmitting = createRequest.isPending || uploadAttachment.isPending;
+  const isSubmitting = createRequest.isPending || updateRequest.isPending || uploadAttachment.isPending;
 
   const renderStep = () => {
     switch (step) {
@@ -166,7 +193,7 @@ export function CreateRequestWizard() {
           <Pressable onPress={handleBack} hitSlop={8}>
             <MaterialIcons name={step === 0 ? 'close' : 'arrow-back'} size={24} color={colors.text} />
           </Pressable>
-          <ThemedText style={styles.headerTitle}>New Request</ThemedText>
+          <ThemedText style={styles.headerTitle}>{isEditing ? 'Edit Request' : 'New Request'}</ThemedText>
           <View style={{ width: 24 }} />
         </View>
 
