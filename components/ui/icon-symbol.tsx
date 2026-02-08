@@ -19,6 +19,17 @@ const MAPPING = {
   'person.fill': 'person',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'doc.text.fill': 'description',
+  'bubble.left.and.bubble.right.fill': 'forum',
+  'magnifyingglass': 'search',
+  'text.quote': 'format-quote',
+  'bookmark.fill': 'bookmark',
+  'bookmark': 'bookmark-border',
+  'hammer.fill': 'gavel',
+  'location.fill': 'location-on',
+  'plus': 'add',
+  'xmark': 'close',
+  'arrow.left': 'arrow-back',
 } as IconMapping;
 
 /**

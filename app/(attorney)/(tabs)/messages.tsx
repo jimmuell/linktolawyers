@@ -2,12 +2,13 @@ import { StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Spacing } from '@/constants/typography';
 
-export default function ExploreScreen() {
+export default function MessagesScreen() {
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title">Explore</ThemedText>
-      <ThemedText>Browse legal services and attorneys.</ThemedText>
+      <ThemedText type="title">Messages</ThemedText>
+      <ThemedText>No messages yet.</ThemedText>
     </ThemedView>
   );
 }
@@ -17,7 +18,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    padding: 16,
+    gap: Spacing.sm,
+    padding: Spacing.lg,
   },
 });

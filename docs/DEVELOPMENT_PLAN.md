@@ -12,6 +12,7 @@
 
 ## Phase 1: Foundation & Authentication
 
+    
     ### 1.1 Project Setup
 
 - [x] Initialize Expo project with TypeScript
@@ -72,12 +73,12 @@
 
 ### 1.7 Role-Based Navigation
 
-- [ ] `(client)/(tabs)` layout - Client tab navigation (Home, Requests, Messages, Profile)
-- [ ] `(attorney)/(tabs)` layout - Attorney tab navigation (Home, Browse, Quotes, Messages, Profile)
-- [ ] Redirect users based on role after login
-- [ ] Home dashboard (role-specific content)
-- [ ] Profile screen with settings access
-- [ ] Settings screen
+- [x] `(client)/(tabs)` layout - Client tab navigation (Home, Requests, Messages, Profile)
+- [x] `(attorney)/(tabs)` layout - Attorney tab navigation (Home, Browse, Quotes, Messages, Profile)
+- [x] Redirect users based on role after login
+- [x] Home dashboard (role-specific content)
+- [x] Profile screen with settings access
+- [x] Settings screen
 
 ### 1.8 Push Notifications
 
@@ -93,49 +94,49 @@
 
 ### 2.1 Database Schema (Phase 2)
 
-- [ ] Create `requests` table
-- [ ] Create `request_attachments` table
-- [ ] Create `saved_requests` table
-- [ ] Create `hidden_requests` table
-- [ ] Set up RLS policies for requests
+- [x] Create `requests` table
+- [x] Create `request_attachments` table
+- [x] Create `saved_requests` table
+- [x] Create `hidden_requests` table
+- [x] Set up RLS policies for requests
 
 ### 2.2 Client - Request Creation
 
-- [ ] `(client)/requests/new` - Multi-step wizard layout
-- [ ] Step 1: Practice area selection (searchable picker)
-- [ ] Step 2: Request details (title, description)
-- [ ] Step 3: Location preferences (state, city)
-- [ ] Step 4: Budget range (optional, min/max inputs)
-- [ ] Step 5: Document attachments (photos, PDFs)
-- [ ] Step 6: Review and submit
-- [ ] Form validation with zod
-- [ ] Draft saving functionality
-- [ ] Request submission to Supabase
+- [x] `(client)/requests/new` - Multi-step wizard layout
+- [x] Step 1: Practice area selection (searchable picker)
+- [x] Step 2: Request details (title, description)
+- [x] Step 3: Location preferences (state, city)
+- [x] Step 4: Budget range (optional, min/max inputs)
+- [x] Step 5: Document attachments (photos, PDFs)
+- [x] Step 6: Review and submit
+- [x] Form validation with zod
+- [x] Draft saving functionality
+- [x] Request submission to Supabase
 - [ ] Success confirmation screen
 
 ### 2.3 Client - Request Management
 
-- [ ] `(client)/requests/index` - Request list view
-- [ ] Status badges (draft, pending, quoted, etc.)
-- [ ] Pull-to-refresh
-- [ ] `(client)/requests/[id]` - Request detail view
+- [x] `(client)/requests/index` - Request list view
+- [x] Status badges (draft, pending, quoted, etc.)
+- [x] Pull-to-refresh
+- [x] `(client)/requests/[id]` - Request detail view
 - [ ] Request status timeline visualization
 - [ ] Edit pending requests
-- [ ] Cancel/withdraw requests
-- [ ] Delete draft requests
+- [x] Cancel/withdraw requests
+- [x] Delete draft requests
 
 ### 2.4 Attorney - Browse Requests
 
-- [ ] `(attorney)/browse/index` - Available requests feed
-- [ ] Request card component (title, category, budget, date)
-- [ ] `(attorney)/browse/[id]` - Request detail view
-- [ ] Filter by practice area
-- [ ] Filter by location
-- [ ] Filter by budget range
-- [ ] Sort options (newest, budget, urgency)
-- [ ] Save/bookmark requests
-- [ ] Hide/dismiss requests
-- [ ] Quick quote button (navigates to quote form)
+- [x] `(attorney)/browse/index` - Available requests feed
+- [x] Request card component (title, category, budget, date)
+- [x] `(attorney)/browse/[id]` - Request detail view
+- [x] Filter by practice area
+- [x] Filter by location
+- [x] Filter by budget range
+- [x] Sort options (newest, budget, urgency)
+- [x] Save/bookmark requests
+- [x] Hide/dismiss requests
+- [x] Quick quote button (navigates to quote form)
 
 ### 2.5 Notifications (Phase 2)
 
@@ -148,41 +149,41 @@
 
 ### 3.1 Database Schema (Phase 3)
 
-- [ ] Create `quotes` table
-- [ ] Create `quote_templates` table
-- [ ] Set up RLS policies for quotes
+- [x] Create `quotes` table
+- [x] Create `quote_templates` table
+- [x] Set up RLS policies for quotes
 
 ### 3.2 Attorney - Quote Creation
 
-- [ ] `(attorney)/quotes/new` - Quote creation form
-- [ ] Pricing type selection (flat fee, hourly, retainer, contingency)
-- [ ] Fee amount input
-- [ ] Scope of work (rich text)
-- [ ] Estimated timeline
-- [ ] Terms and conditions
-- [ ] Valid until date picker
-- [ ] Quote preview before submission
-- [ ] Submit quote to Supabase
+- [x] `(attorney)/quotes/new` - Quote creation form
+- [x] Pricing type selection (flat fee, hourly, retainer, contingency)
+- [x] Fee amount input
+- [x] Scope of work (rich text)
+- [x] Estimated timeline
+- [x] Terms and conditions
+- [x] Valid until date picker
+- [x] Quote preview before submission
+- [x] Submit quote to Supabase
 
 ### 3.3 Attorney - Quote Management
 
-- [ ] `(attorney)/quotes/index` - Submitted quotes dashboard
-- [ ] Quote status tracking (pending, viewed, accepted, declined, expired)
-- [ ] `(attorney)/quotes/[id]` - Quote detail view
+- [x] `(attorney)/quotes/index` - Submitted quotes dashboard
+- [x] Quote status tracking (pending, viewed, accepted, declined, expired)
+- [x] `(attorney)/quotes/[id]` - Quote detail view
 - [ ] Edit/revise quote
-- [ ] Withdraw quote
-- [ ] Quote templates system
+- [x] Withdraw quote
+- [x] Quote templates system
 - [ ] `(attorney)/quotes/templates` - Manage templates
 
 ### 3.4 Client - Quote Review
 
-- [ ] `(client)/requests/[id]/quotes` - Quotes list for request
-- [ ] Quote card component (attorney info, price, status)
-- [ ] `(client)/requests/[id]/quotes/[quoteId]` - Quote detail
+- [x] `(client)/requests/[id]/quotes` - Quotes list for request
+- [x] Quote card component (attorney info, price, status)
+- [x] `(client)/quotes/[quoteId]` - Quote detail
 - [ ] Attorney profile quick view
 - [ ] `(client)/requests/[id]/quotes/compare` - Side-by-side comparison
-- [ ] Accept quote flow (confirmation modal, terms acceptance)
-- [ ] Decline quote with optional reason
+- [x] Accept quote flow (confirmation modal, terms acceptance)
+- [x] Decline quote with optional reason
 - [ ] Accepted quotes history
 
 ### 3.5 Notifications (Phase 3)

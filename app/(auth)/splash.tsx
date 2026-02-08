@@ -17,17 +17,16 @@ export default function SplashScreen() {
   const { isInitialized, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || isAuthenticated) return;
 
+    let cancelled = false;
     const navigate = async () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      if (isAuthenticated) {
-        router.replace('/(tabs)');
-        return;
-      }
+      if (cancelled) return;
 
       const onboardingComplete = await AsyncStorage.getItem(ONBOARDING_KEY);
+      if (cancelled) return;
+
       if (onboardingComplete) {
         router.replace('/(auth)/login');
       } else {
@@ -36,6 +35,7 @@ export default function SplashScreen() {
     };
 
     navigate();
+    return () => { cancelled = true; };
   }, [isInitialized, isAuthenticated]);
 
   return (

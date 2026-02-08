@@ -8,6 +8,8 @@ import 'react-native-reanimated';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { Colors } from '@/constants/theme';
 import { ThemeProvider, useThemeContext } from '@/contexts/theme-context';
+import { getRoleHomePath } from '@/lib/role-routes';
+import { useAuthStore } from '@/stores/auth-store';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +60,7 @@ function NavigationThemeWrapper({ children }: { children: React.ReactNode }) {
 
 function ProtectedRouteGuard({ children }: { children: React.ReactNode }) {
   const { isInitialized, isAuthenticated } = useAuth();
+  const profile = useAuthStore((s) => s.profile);
   const segments = useSegments();
   const router = useRouter();
 
@@ -67,11 +70,15 @@ function ProtectedRouteGuard({ children }: { children: React.ReactNode }) {
     const firstSegment = segments[0] as string | undefined;
     const inAuthGroup = firstSegment === '(auth)';
     const isRoot = !firstSegment || firstSegment === 'index';
+    const inProtectedGroup =
+      firstSegment === '(client)' || firstSegment === '(attorney)';
 
-    if (!isAuthenticated && !inAuthGroup && !isRoot) {
+    if (!isAuthenticated && inProtectedGroup) {
       router.replace('/(auth)/splash');
+    } else if (isAuthenticated && profile && (inAuthGroup || isRoot)) {
+      router.replace(getRoleHomePath(profile.role));
     }
-  }, [isInitialized, isAuthenticated, segments, router]);
+  }, [isInitialized, isAuthenticated, profile, segments, router]);
 
   return <>{children}</>;
 }
@@ -86,7 +93,8 @@ export default function RootLayout() {
               <Stack>
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="(client)" options={{ headerShown: false }} />
+                <Stack.Screen name="(attorney)" options={{ headerShown: false }} />
                 <Stack.Screen name="settings" options={{ presentation: 'modal', headerShown: false }} />
                 <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
               </Stack>

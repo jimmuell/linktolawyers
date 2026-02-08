@@ -26,7 +26,7 @@ eas build --profile production --platform ios
 
 ## Architecture
 
-**Routing**: File-based routing via Expo Router. Routes live in `app/`. The root layout (`app/_layout.tsx`) wraps the app in QueryClientProvider > ThemeProvider > AuthProvider > NavigationThemeWrapper > ProtectedRouteGuard > Stack. The app starts at `app/index.tsx` which redirects to `/(auth)/splash`. The splash screen checks auth state and routes to `/(tabs)` (authenticated) or `/(auth)/login` (unauthenticated). The `(auth)` group contains splash, onboarding, login, register, and forgot-password screens. A `ProtectedRouteGuard` in the root layout redirects unauthenticated users away from protected routes.
+**Routing**: File-based routing via Expo Router. Routes live in `app/`. The root layout (`app/_layout.tsx`) wraps the app in QueryClientProvider > ThemeProvider > AuthProvider > NavigationThemeWrapper > ProtectedRouteGuard > Stack. The app starts at `app/index.tsx` which redirects to `/(auth)/splash`. The splash screen checks auth state and role, routing authenticated users to `/(client)/(tabs)` or `/(attorney)/(tabs)` via `getRoleHomePath()` from `lib/role-routes.ts`. The `(auth)` group contains splash, onboarding, login, register, and forgot-password screens. The `(client)` group uses a Stack layout wrapping `(tabs)` (4 tabs: Home, Requests, Messages, Profile) plus `requests/new` (modal), `requests/[id]`, `requests/[id]/quotes`, and `quotes/[quoteId]` screens. The `(attorney)` group uses a Stack layout wrapping `(tabs)` (5 tabs: Home, Browse, Quotes, Messages, Profile) plus `browse/[id]`, `quotes/new` (modal), and `quotes/[id]` screens. Both groups share the profile screen via `components/screens/profile-screen.tsx`. A `ProtectedRouteGuard` in the root layout redirects unauthenticated users away from `(client)` and `(attorney)` groups.
 
 **Theming**: Centralized in `constants/theme.ts` with light/dark color definitions. Components use `useThemeColor()` hook and themed wrappers (`ThemedText`, `ThemedView`). Platform-specific hooks exist (e.g., `use-color-scheme.web.ts`).
 
@@ -41,7 +41,7 @@ eas build --profile production --platform ios
 - Client state: Zustand (stores in `stores/`)
 - Form state: react-hook-form + Zod validation schemas (`lib/validators.ts`)
 
-**Database**: Supabase Postgres with a `profiles` table (id, updated_at, username, full_name, avatar_url, website, role). The `role` column uses a `user_role` enum (`'client' | 'attorney'`).
+**Database**: Supabase Postgres with tables: `profiles` (id, updated_at, username, full_name, avatar_url, website, role), `requests` (id, client_id, title, description, practice_area, state, city, budget_min, budget_max, urgency, status, created_at, updated_at), `request_attachments` (id, request_id, file_url, file_name, file_type, file_size, created_at), `saved_requests` (attorney_id, request_id), `hidden_requests` (attorney_id, request_id), `quotes` (id, request_id, attorney_id, pricing_type, fee_amount, estimated_hours, scope_of_work, estimated_timeline, terms, valid_until, status, decline_reason, viewed_at, created_at, updated_at) with `UNIQUE(request_id, attorney_id)`, `quote_templates` (id, attorney_id, name, pricing_type, fee_amount, estimated_hours, scope_of_work, estimated_timeline, terms, created_at, updated_at). The `role` column uses a `user_role` enum (`'client' | 'attorney'`). The `urgency` column uses `request_urgency` enum, `status` uses `request_status` enum. The `pricing_type` column uses `pricing_type` enum (`flat_fee | hourly | retainer | contingency`), `quote status` uses `quote_status` enum (`draft | submitted | viewed | accepted | declined | withdrawn | expired`). A DB trigger `update_request_status_on_quote()` auto-updates request status to `quoted` on first quote insert and to `accepted` when a quote is accepted (also auto-declines other quotes).
 
 **Auth**: Supabase Auth with Zustand store (`stores/auth-store.ts`) for signIn/signUp/signOut/resetPassword. Auth context (`contexts/auth-context.tsx`) listens to `onAuthStateChange` and provides `isInitialized`/`isAuthenticated`. Session persisted via SQLite-backed localStorage.
 
@@ -50,10 +50,21 @@ eas build --profile production --platform ios
 | File | Purpose |
 |------|---------|
 | `lib/supabase.ts` | Supabase client singleton |
-| `lib/validators.ts` | Zod schemas for forms |
+| `lib/validators.ts` | Zod schemas for forms (auth, profile, requests) |
 | `types/index.ts` | Shared TypeScript types & Database type |
 | `stores/auth-store.ts` | Zustand auth store (session, user, profile, auth methods) |
 | `contexts/auth-context.tsx` | Auth context provider with Supabase session listener |
+| `lib/role-routes.ts` | `getRoleHomePath(role)` — role-to-route mapping |
+| `hooks/use-requests.ts` | React Query hooks for requests (client CRUD, attorney browse, save/hide) |
+| `hooks/use-quotes.ts` | React Query hooks for quotes (attorney CRUD, client review, templates) |
+| `constants/practice-areas.ts` | Legal practice area options |
+| `constants/us-states.ts` | US states with abbreviations |
+| `constants/pricing-types.ts` | Pricing type options (flat_fee, hourly, retainer, contingency) and valid-until options |
+| `components/screens/profile-screen.tsx` | Shared profile screen (used by both client & attorney tabs) |
+| `components/screens/create-request-wizard.tsx` | Multi-step request creation wizard |
+| `components/screens/request-detail-screen.tsx` | Shared request detail view (client & attorney variants) |
+| `components/screens/create-quote-form.tsx` | Single scrollable quote creation form with preview modal |
+| `components/screens/quote-detail-screen.tsx` | Shared quote detail view (client & attorney variants) |
 | `app/_layout.tsx` | Root layout with providers + ProtectedRouteGuard |
 | `app/index.tsx` | Entry point, redirects to auth splash |
 
@@ -81,4 +92,249 @@ eas build --profile production --platform ios
 CREATE TYPE user_role AS ENUM ('client', 'attorney');
 ALTER TABLE public.profiles ADD COLUMN role user_role;
 CREATE INDEX idx_profiles_role ON public.profiles (role);
+```
+
+### Phase 2: Request system tables (run in Supabase SQL Editor)
+
+```sql
+-- Enums
+CREATE TYPE request_urgency AS ENUM ('low', 'normal', 'high', 'urgent');
+CREATE TYPE request_status AS ENUM ('draft', 'pending', 'quoted', 'accepted', 'closed', 'cancelled');
+
+-- Requests table
+CREATE TABLE public.requests (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  client_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  title text NOT NULL,
+  description text NOT NULL,
+  practice_area text NOT NULL,
+  state text,
+  city text,
+  budget_min integer,
+  budget_max integer,
+  urgency request_urgency DEFAULT 'normal' NOT NULL,
+  status request_status DEFAULT 'draft' NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+CREATE INDEX idx_requests_client ON public.requests (client_id);
+CREATE INDEX idx_requests_status ON public.requests (status);
+CREATE INDEX idx_requests_practice_area ON public.requests (practice_area);
+CREATE INDEX idx_requests_created ON public.requests (created_at DESC);
+
+-- Auto-update updated_at
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER requests_updated_at
+  BEFORE UPDATE ON public.requests
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Request attachments
+CREATE TABLE public.request_attachments (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  request_id uuid REFERENCES public.requests(id) ON DELETE CASCADE NOT NULL,
+  file_url text NOT NULL,
+  file_name text NOT NULL,
+  file_type text NOT NULL,
+  file_size integer NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+
+CREATE INDEX idx_request_attachments_request ON public.request_attachments (request_id);
+
+-- Saved requests (attorney bookmarks)
+CREATE TABLE public.saved_requests (
+  attorney_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  request_id uuid REFERENCES public.requests(id) ON DELETE CASCADE NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  PRIMARY KEY (attorney_id, request_id)
+);
+
+-- Hidden requests (attorney dismissals)
+CREATE TABLE public.hidden_requests (
+  attorney_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  request_id uuid REFERENCES public.requests(id) ON DELETE CASCADE NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  PRIMARY KEY (attorney_id, request_id)
+);
+
+-- RLS policies
+ALTER TABLE public.requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.request_attachments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.saved_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hidden_requests ENABLE ROW LEVEL SECURITY;
+
+-- Clients: full CRUD on own requests
+CREATE POLICY "Clients can view own requests"
+  ON public.requests FOR SELECT USING (auth.uid() = client_id);
+
+CREATE POLICY "Clients can create requests"
+  ON public.requests FOR INSERT WITH CHECK (auth.uid() = client_id);
+
+CREATE POLICY "Clients can update own requests"
+  ON public.requests FOR UPDATE USING (auth.uid() = client_id);
+
+CREATE POLICY "Clients can delete own draft requests"
+  ON public.requests FOR DELETE USING (auth.uid() = client_id AND status = 'draft');
+
+-- Attorneys: read non-draft requests
+CREATE POLICY "Attorneys can view non-draft requests"
+  ON public.requests FOR SELECT USING (
+    status != 'draft'
+    AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'attorney')
+  );
+
+-- Attachments: follow request access
+CREATE POLICY "Users can view attachments of accessible requests"
+  ON public.request_attachments FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.requests WHERE id = request_id AND (client_id = auth.uid() OR status != 'draft'))
+  );
+
+CREATE POLICY "Clients can add attachments to own requests"
+  ON public.request_attachments FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM public.requests WHERE id = request_id AND client_id = auth.uid())
+  );
+
+-- Saved requests: attorneys manage own
+CREATE POLICY "Attorneys can view own saved"
+  ON public.saved_requests FOR SELECT USING (auth.uid() = attorney_id);
+
+CREATE POLICY "Attorneys can save requests"
+  ON public.saved_requests FOR INSERT WITH CHECK (auth.uid() = attorney_id);
+
+CREATE POLICY "Attorneys can unsave requests"
+  ON public.saved_requests FOR DELETE USING (auth.uid() = attorney_id);
+
+-- Hidden requests: attorneys manage own
+CREATE POLICY "Attorneys can view own hidden"
+  ON public.hidden_requests FOR SELECT USING (auth.uid() = attorney_id);
+
+CREATE POLICY "Attorneys can hide requests"
+  ON public.hidden_requests FOR INSERT WITH CHECK (auth.uid() = attorney_id);
+
+CREATE POLICY "Attorneys can unhide requests"
+  ON public.hidden_requests FOR DELETE USING (auth.uid() = attorney_id);
+
+-- Storage bucket for request attachments
+INSERT INTO storage.buckets (id, name, public) VALUES ('request-attachments', 'request-attachments', true);
+
+CREATE POLICY "Users can upload request attachments"
+  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'request-attachments' AND auth.role() = 'authenticated');
+
+CREATE POLICY "Anyone can view request attachments"
+  ON storage.objects FOR SELECT USING (bucket_id = 'request-attachments');
+```
+
+### Phase 3: Quoting system tables (run in Supabase SQL Editor)
+
+```sql
+-- Enums
+CREATE TYPE pricing_type AS ENUM ('flat_fee', 'hourly', 'retainer', 'contingency');
+CREATE TYPE quote_status AS ENUM ('draft', 'submitted', 'viewed', 'accepted', 'declined', 'withdrawn', 'expired');
+
+-- Quotes table
+CREATE TABLE public.quotes (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  request_id uuid REFERENCES public.requests(id) ON DELETE CASCADE NOT NULL,
+  attorney_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  pricing_type pricing_type NOT NULL,
+  fee_amount numeric(12,2) NOT NULL,
+  estimated_hours numeric(6,1),
+  scope_of_work text NOT NULL,
+  estimated_timeline text,
+  terms text,
+  valid_until timestamptz NOT NULL,
+  status quote_status DEFAULT 'submitted' NOT NULL,
+  decline_reason text,
+  viewed_at timestamptz,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL,
+  UNIQUE(request_id, attorney_id)
+);
+
+CREATE INDEX idx_quotes_request ON public.quotes (request_id);
+CREATE INDEX idx_quotes_attorney ON public.quotes (attorney_id);
+CREATE INDEX idx_quotes_status ON public.quotes (status);
+
+CREATE TRIGGER quotes_updated_at
+  BEFORE UPDATE ON public.quotes
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Quote templates table
+CREATE TABLE public.quote_templates (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  attorney_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  name text NOT NULL,
+  pricing_type pricing_type NOT NULL,
+  fee_amount numeric(12,2),
+  estimated_hours numeric(6,1),
+  scope_of_work text,
+  estimated_timeline text,
+  terms text,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+CREATE INDEX idx_quote_templates_attorney ON public.quote_templates (attorney_id);
+
+CREATE TRIGGER quote_templates_updated_at
+  BEFORE UPDATE ON public.quote_templates
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- RLS
+ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quote_templates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Attorneys can view own quotes"
+  ON public.quotes FOR SELECT USING (auth.uid() = attorney_id);
+CREATE POLICY "Attorneys can create quotes"
+  ON public.quotes FOR INSERT WITH CHECK (auth.uid() = attorney_id);
+CREATE POLICY "Attorneys can update own quotes"
+  ON public.quotes FOR UPDATE USING (auth.uid() = attorney_id);
+CREATE POLICY "Clients can view quotes on own requests"
+  ON public.quotes FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.requests WHERE id = request_id AND client_id = auth.uid())
+  );
+CREATE POLICY "Clients can update quotes on own requests"
+  ON public.quotes FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM public.requests WHERE id = request_id AND client_id = auth.uid())
+  );
+
+CREATE POLICY "Attorneys can view own templates"
+  ON public.quote_templates FOR SELECT USING (auth.uid() = attorney_id);
+CREATE POLICY "Attorneys can create templates"
+  ON public.quote_templates FOR INSERT WITH CHECK (auth.uid() = attorney_id);
+CREATE POLICY "Attorneys can update own templates"
+  ON public.quote_templates FOR UPDATE USING (auth.uid() = attorney_id);
+CREATE POLICY "Attorneys can delete own templates"
+  ON public.quote_templates FOR DELETE USING (auth.uid() = attorney_id);
+
+-- Trigger: auto-update request status on quote changes
+CREATE OR REPLACE FUNCTION update_request_status_on_quote()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    UPDATE public.requests SET status = 'quoted', updated_at = now()
+    WHERE id = NEW.request_id AND status = 'pending';
+  END IF;
+  IF TG_OP = 'UPDATE' AND NEW.status = 'accepted' AND OLD.status != 'accepted' THEN
+    UPDATE public.requests SET status = 'accepted', updated_at = now()
+    WHERE id = NEW.request_id;
+    UPDATE public.quotes SET status = 'declined', decline_reason = 'Another quote was accepted', updated_at = now()
+    WHERE request_id = NEW.request_id AND id != NEW.id AND status IN ('submitted', 'viewed');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_quote_change
+  AFTER INSERT OR UPDATE ON public.quotes
+  FOR EACH ROW EXECUTE FUNCTION update_request_status_on_quote();
 ```

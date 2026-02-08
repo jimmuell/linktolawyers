@@ -35,6 +35,7 @@ export default function LoginScreen() {
   const warningColor = useThemeColor({}, 'warning');
   const signIn = useAuthStore((s) => s.signIn);
   const signUp = useAuthStore((s) => s.signUp);
+  const fetchProfile = useAuthStore((s) => s.fetchProfile);
   const [devLoading, setDevLoading] = useState<'client' | 'attorney' | null>(null);
 
   const {
@@ -52,7 +53,8 @@ export default function LoginScreen() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       await signIn(data.email, data.password);
-      router.replace('/(tabs)');
+      const { user } = useAuthStore.getState();
+      if (user) await fetchProfile(user.id);
     } catch (error) {
       Alert.alert('Sign In Failed', error instanceof Error ? error.message : 'An error occurred');
     }
@@ -68,7 +70,8 @@ export default function LoginScreen() {
         await signUp(account.email, account.password, account.fullName, account.role);
         await signIn(account.email, account.password);
       }
-      router.replace('/(tabs)');
+      const { user } = useAuthStore.getState();
+      if (user) await fetchProfile(user.id);
     } catch (error) {
       Alert.alert(
         'Dev Login Failed',
