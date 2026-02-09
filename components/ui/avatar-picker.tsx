@@ -16,14 +16,17 @@ try {
 interface AvatarPickerProps {
   uri: string | null;
   onPick: (uri: string) => Promise<void>;
+  onDelete?: () => Promise<void>;
   size?: number;
 }
 
-export function AvatarPicker({ uri, onPick, size = 100 }: AvatarPickerProps) {
+export function AvatarPicker({ uri, onPick, onDelete, size = 100 }: AvatarPickerProps) {
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const surface = useThemeColor({}, 'surface');
   const textSecondary = useThemeColor({}, 'textSecondary');
   const primary = useThemeColor({}, 'primary');
+  const error = useThemeColor({}, 'error');
 
   const handlePick = async () => {
     if (!ImagePicker) {
@@ -52,43 +55,75 @@ export function AvatarPicker({ uri, onPick, size = 100 }: AvatarPickerProps) {
     setUploading(true);
     try {
       await onPick(result.assets[0].uri);
-    } catch (error) {
-      Alert.alert('Upload Failed', error instanceof Error ? error.message : 'An error occurred');
+    } catch (err) {
+      Alert.alert('Upload Failed', err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setUploading(false);
     }
   };
 
+  const handleDelete = () => {
+    Alert.alert('Remove Photo', 'Are you sure you want to remove your profile picture?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          setDeleting(true);
+          try {
+            await onDelete?.();
+          } catch (err) {
+            Alert.alert('Error', err instanceof Error ? err.message : 'Could not remove photo');
+          } finally {
+            setDeleting(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  const busy = uploading || deleting;
+
   return (
-    <Pressable onPress={handlePick} disabled={uploading} style={styles.container}>
-      <View
-        style={[
-          styles.avatar,
-          { width: size, height: size, borderRadius: size / 2, backgroundColor: surface },
-        ]}
-      >
-        {uploading ? (
-          <ActivityIndicator color={primary} />
-        ) : uri ? (
-          <Image
-            source={{ uri }}
-            style={{ width: size, height: size, borderRadius: size / 2 }}
-            contentFit="cover"
-          />
-        ) : (
-          <MaterialIcons name="person" size={size * 0.5} color={textSecondary} />
-        )}
-      </View>
-      <View style={[styles.badge, { backgroundColor: primary }]}>
-        <MaterialIcons name="camera-alt" size={16} color="#fff" />
-      </View>
-    </Pressable>
+    <View style={styles.wrapper}>
+      <Pressable onPress={handlePick} disabled={busy} style={styles.container}>
+        <View
+          style={[
+            styles.avatar,
+            { width: size, height: size, borderRadius: size / 2, backgroundColor: surface },
+          ]}
+        >
+          {busy ? (
+            <ActivityIndicator color={primary} />
+          ) : uri ? (
+            <Image
+              source={{ uri }}
+              style={{ width: size, height: size, borderRadius: size / 2 }}
+              contentFit="cover"
+            />
+          ) : (
+            <MaterialIcons name="person" size={size * 0.5} color={textSecondary} />
+          )}
+        </View>
+        <View style={[styles.badge, { backgroundColor: primary }]}>
+          <MaterialIcons name="camera-alt" size={16} color="#fff" />
+        </View>
+      </Pressable>
+      {uri && onDelete && !busy && (
+        <Pressable onPress={handleDelete} hitSlop={8} style={[styles.deleteButton, { backgroundColor: error }]}>
+          <MaterialIcons name="close" size={14} color="#fff" />
+        </Pressable>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     alignSelf: 'center',
+    position: 'relative',
+  },
+  container: {
     position: 'relative',
   },
   avatar: {
@@ -102,6 +137,16 @@ const styles = StyleSheet.create({
     right: 0,
     width: 32,
     height: 32,
+    borderRadius: Radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 24,
+    height: 24,
     borderRadius: Radii.full,
     alignItems: 'center',
     justifyContent: 'center',

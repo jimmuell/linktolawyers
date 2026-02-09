@@ -26,6 +26,7 @@ interface AuthStore {
   fetchProfile: (userId: string) => Promise<void>;
   updateProfile: (updates: Partial<Omit<Profile, 'id'>>) => Promise<void>;
   uploadAvatar: (fileUri: string) => Promise<string>;
+  deleteAvatar: () => Promise<void>;
   fetchAttorneyProfile: (userId: string) => Promise<void>;
   updateAttorneyProfile: (updates: Partial<Omit<AttorneyProfile, 'id'>>) => Promise<void>;
 }
@@ -153,6 +154,19 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     await get().updateProfile({ avatar_url: avatarUrl });
     return avatarUrl;
+  },
+
+  deleteAvatar: async () => {
+    const userId = get().user?.id;
+    if (!userId) throw new Error('Not authenticated');
+
+    const filePath = `${userId}/avatar.jpg`;
+
+    // Remove from storage (ignore error if file doesn't exist)
+    await supabase.storage.from('avatars').remove([filePath]);
+
+    // Set avatar_url to null in the profile
+    await get().updateProfile({ avatar_url: null });
   },
 
   fetchAttorneyProfile: async (userId) => {

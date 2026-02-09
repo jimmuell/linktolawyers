@@ -30,6 +30,7 @@ export default function EditBasicInfoScreen() {
   const profile = useAuthStore((s) => s.profile);
   const updateProfile = useAuthStore((s) => s.updateProfile);
   const uploadAvatar = useAuthStore((s) => s.uploadAvatar);
+  const deleteAvatar = useAuthStore((s) => s.deleteAvatar);
 
   const {
     control,
@@ -91,7 +92,7 @@ export default function EditBasicInfoScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <AvatarPicker uri={profile?.avatar_url ?? null} onPick={handleAvatarPick} />
+          <AvatarPicker uri={profile?.avatar_url ?? null} onPick={handleAvatarPick} onDelete={deleteAvatar} />
 
           <View style={styles.fields}>
             <Controller

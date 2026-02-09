@@ -5,9 +5,11 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useThemeContext } from '@/contexts/theme-context';
+import { useUnreadStore } from '@/stores/unread-store';
 
 export default function ClientTabLayout() {
   const { effectiveTheme } = useThemeContext();
+  const totalUnread = useUnreadStore((s) => s.totalUnread);
 
   return (
     <Tabs
@@ -44,6 +46,7 @@ export default function ClientTabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="bubble.left.and.bubble.right.fill" color={color} />
           ),
+          tabBarBadge: totalUnread > 0 ? (totalUnread > 99 ? '99+' : totalUnread) : undefined,
         }}
       />
     </Tabs>

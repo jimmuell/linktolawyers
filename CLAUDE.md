@@ -26,7 +26,7 @@ eas build --profile production --platform ios
 
 ## Architecture
 
-**Routing**: File-based routing via Expo Router. Routes live in `app/`. The root layout (`app/_layout.tsx`) wraps the app in QueryClientProvider > ThemeProvider > AuthProvider > NavigationThemeWrapper > ProtectedRouteGuard > Stack. The app starts at `app/index.tsx` which redirects to `/(auth)/splash`. The splash screen checks auth state and role, routing authenticated users to `/(client)/(tabs)` or `/(attorney)/(tabs)` via `getRoleHomePath()` from `lib/role-routes.ts`. The `(auth)` group contains splash, onboarding, login, register, and forgot-password screens. The `(client)` group uses a Stack layout wrapping `(tabs)` (4 tabs: Home, Requests, Cases, Messages) plus `requests/new` (modal), `requests/[id]`, `requests/[id]/quotes`, `quotes/[quoteId]`, and `cases/[id]` screens. The `(attorney)` group uses a Stack layout wrapping `(tabs)` (5 tabs: Home, Browse, Quotes, Messages, Cases) plus `browse/[id]`, `quotes/new` (modal), `quotes/[id]`, and `cases/[id]` screens. Profile is a root-level modal route (`app/profile.tsx`, `presentation: 'modal'`) opened via the `ProfileButton` avatar in tab headers; it shows a read-only overview with navigation to `edit-basic-info`, `edit-attorney-profile`, `availability`, and `notifications` modal routes. A `ProtectedRouteGuard` in the root layout redirects unauthenticated users away from `(client)` and `(attorney)` groups.
+**Routing**: File-based routing via Expo Router. Routes live in `app/`. The root layout (`app/_layout.tsx`) wraps the app in QueryClientProvider > ThemeProvider > AuthProvider > NavigationThemeWrapper > ProtectedRouteGuard > Stack. The app starts at `app/index.tsx` which redirects to `/(auth)/splash`. The splash screen checks auth state and role, routing authenticated users to `/(client)/(tabs)` or `/(attorney)/(tabs)` via `getRoleHomePath()` from `lib/role-routes.ts`. The `(auth)` group contains splash, onboarding, login, register, and forgot-password screens. The `(client)` group uses a Stack layout wrapping `(tabs)` (4 tabs: Home, Requests, Cases, Messages) plus `requests/new` (modal), `requests/[id]`, `requests/[id]/quotes`, `quotes/[quoteId]`, and `cases/[id]` screens. The `(attorney)` group uses a Stack layout wrapping `(tabs)` (5 tabs: Home, Browse, Quotes, Messages, Cases) plus `browse/[id]`, `quotes/new` (modal), `quotes/[id]`, and `cases/[id]` screens. Profile is a root-level modal route (`app/profile.tsx`, `presentation: 'modal'`) opened via the `ProfileButton` avatar in tab headers; it shows a read-only overview with navigation to `edit-basic-info`, `edit-attorney-profile`, `availability`, and `notifications` modal routes. A `ProtectedRouteGuard` in the root layout redirects unauthenticated users away from `(client)` and `(attorney)` groups. **Messaging is integrated into request and case detail screens** via a "Details" / "Chat" `SegmentedControl` tab — there are no standalone chat routes. The Messages tab acts as an alert/inbox list; tapping a conversation navigates to the relevant case or request detail with `initialTab=chat`. The `ChatPanel` component (`components/ui/chat-panel.tsx`) provides the reusable embedded chat UI with lazy conversation creation, realtime messages, and typing indicators.
 
 **Theming**: Centralized in `constants/theme.ts` with light/dark color definitions. Components use `useThemeColor()` hook and themed wrappers (`ThemedText`, `ThemedView`). Platform-specific hooks exist (e.g., `use-color-scheme.web.ts`).
 
@@ -41,7 +41,7 @@ eas build --profile production --platform ios
 - Client state: Zustand (stores in `stores/`)
 - Form state: react-hook-form + Zod validation schemas (`lib/validators.ts`)
 
-**Database**: Supabase Postgres with tables: `profiles` (id, updated_at, username, full_name, avatar_url, website, role), `requests` (id, client_id, title, description, practice_area, state, city, budget_min, budget_max, urgency, status, created_at, updated_at), `request_attachments` (id, request_id, file_url, file_name, file_type, file_size, created_at), `saved_requests` (attorney_id, request_id), `hidden_requests` (attorney_id, request_id), `quotes` (id, request_id, attorney_id, pricing_type, fee_amount, estimated_hours, scope_of_work, estimated_timeline, terms, valid_until, status, decline_reason, viewed_at, created_at, updated_at) with `UNIQUE(request_id, attorney_id)`, `quote_templates` (id, attorney_id, name, pricing_type, fee_amount, estimated_hours, scope_of_work, estimated_timeline, terms, created_at, updated_at). The `role` column uses a `user_role` enum (`'client' | 'attorney'`). The `urgency` column uses `request_urgency` enum, `status` uses `request_status` enum. The `pricing_type` column uses `pricing_type` enum (`flat_fee | hourly | retainer | contingency`), `quote status` uses `quote_status` enum (`draft | submitted | viewed | accepted | declined | withdrawn | expired`). A DB trigger `update_request_status_on_quote()` auto-updates request status to `quoted` on first quote insert and to `accepted` when a quote is accepted (also auto-declines other quotes). Case management: `case_notes` (id, request_id, user_id, content, created_at) stores activity feed notes for active/closed cases, `reviews` (id, request_id, client_id, attorney_id, rating 1-5, comment, created_at, UNIQUE on request_id) stores client ratings after case closure. An accepted request represents an active case; attorneys can close accepted cases via RLS policy.
+**Database**: Supabase Postgres with tables: `profiles` (id, updated_at, username, full_name, avatar_url, website, role), `requests` (id, client_id, title, description, practice_area, state, city, budget_min, budget_max, urgency, status, created_at, updated_at), `request_attachments` (id, request_id, file_url, file_name, file_type, file_size, created_at), `saved_requests` (attorney_id, request_id), `hidden_requests` (attorney_id, request_id), `quotes` (id, request_id, attorney_id, pricing_type, fee_amount, estimated_hours, scope_of_work, estimated_timeline, terms, valid_until, status, decline_reason, viewed_at, created_at, updated_at) with `UNIQUE(request_id, attorney_id)`, `quote_templates` (id, attorney_id, name, pricing_type, fee_amount, estimated_hours, scope_of_work, estimated_timeline, terms, created_at, updated_at). The `role` column uses a `user_role` enum (`'client' | 'attorney'`). The `urgency` column uses `request_urgency` enum, `status` uses `request_status` enum. The `pricing_type` column uses `pricing_type` enum (`flat_fee | hourly | retainer | contingency`), `quote status` uses `quote_status` enum (`draft | submitted | viewed | accepted | declined | withdrawn | expired`). A DB trigger `update_request_status_on_quote()` auto-updates request status to `quoted` on first quote insert and to `accepted` when a quote is accepted (also auto-declines other quotes). Case management: `case_notes` (id, request_id, user_id, content, created_at) stores activity feed notes for active/closed cases, `reviews` (id, request_id, client_id, attorney_id, rating 1-5, comment, created_at, UNIQUE on request_id) stores client ratings after case closure. An accepted request represents an active case; attorneys can close accepted cases via RLS policy. Messaging: `conversations` (id, request_id, client_id, attorney_id, last_message_text, last_message_at, created_at) with `UNIQUE(client_id, attorney_id, request_id)`, `messages` (id, conversation_id, sender_id, content, is_system, read_at, created_at), `conversation_read_cursors` (conversation_id, user_id PK, last_read_at). A DB trigger `on_message_insert` auto-updates `conversations.last_message_text` and `last_message_at`. Supabase Realtime enabled on `messages` table for live message delivery; typing indicators use Realtime Broadcast.
 
 **Auth**: Supabase Auth with Zustand store (`stores/auth-store.ts`) for signIn/signUp/signOut/resetPassword. Auth context (`contexts/auth-context.tsx`) listens to `onAuthStateChange` and provides `isInitialized`/`isAuthenticated`. Session persisted via SQLite-backed localStorage.
 
@@ -58,6 +58,9 @@ eas build --profile production --platform ios
 | `hooks/use-requests.ts` | React Query hooks for requests (client CRUD, attorney browse, save/hide) |
 | `hooks/use-quotes.ts` | React Query hooks for quotes (attorney CRUD, client review, templates) |
 | `hooks/use-cases.ts` | React Query hooks for cases (list, notes, close, reviews) |
+| `hooks/use-messages.ts` | React Query hooks for conversations and messages (list, send, create, read cursors, unread count) |
+| `hooks/use-realtime-messages.ts` | Supabase Realtime hooks for live messages and typing indicators |
+| `stores/unread-store.ts` | Zustand store for total unread message count (synced to tab badge) |
 | `constants/practice-areas.ts` | Legal practice area options |
 | `constants/us-states.ts` | US states with abbreviations |
 | `constants/pricing-types.ts` | Pricing type options (flat_fee, hourly, retainer, contingency) and valid-until options |
@@ -67,6 +70,9 @@ eas build --profile production --platform ios
 | `components/screens/create-quote-form.tsx` | Single scrollable quote creation form with preview modal |
 | `components/screens/quote-detail-screen.tsx` | Shared quote detail view (client & attorney variants) |
 | `components/screens/case-detail-screen.tsx` | Shared case detail view with notes feed and review (client & attorney variants) |
+| `components/screens/conversations-list-screen.tsx` | Shared conversations list (alert/inbox); tapping navigates to case/request detail with chat tab |
+| `components/ui/chat-panel.tsx` | Reusable embedded chat panel with lazy conversation creation, realtime messages, typing indicators |
+| `components/ui/segmented-control.tsx` | Details/Chat tab toggle used in case and request detail screens |
 | `app/_layout.tsx` | Root layout with providers + ProtectedRouteGuard |
 | `app/index.tsx` | Entry point, redirects to auth splash |
 
@@ -423,4 +429,107 @@ CREATE POLICY "Attorneys can close accepted cases"
   ) WITH CHECK (
     status = 'closed'
   );
+```
+
+### Phase 4 (Messaging): conversations, messages, and read cursors (run in Supabase SQL Editor)
+
+```sql
+-- Conversations table
+CREATE TABLE public.conversations (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  request_id uuid REFERENCES public.requests(id) ON DELETE SET NULL,
+  client_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  attorney_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  last_message_text text,
+  last_message_at timestamptz,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  UNIQUE(client_id, attorney_id, request_id)
+);
+
+CREATE INDEX idx_conversations_client ON public.conversations (client_id);
+CREATE INDEX idx_conversations_attorney ON public.conversations (attorney_id);
+CREATE INDEX idx_conversations_last_message ON public.conversations (last_message_at DESC NULLS LAST);
+
+-- Messages table
+CREATE TABLE public.messages (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  conversation_id uuid REFERENCES public.conversations(id) ON DELETE CASCADE NOT NULL,
+  sender_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  content text NOT NULL,
+  is_system boolean DEFAULT false NOT NULL,
+  read_at timestamptz,
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+
+CREATE INDEX idx_messages_conversation ON public.messages (conversation_id);
+CREATE INDEX idx_messages_created ON public.messages (created_at DESC);
+
+-- Read cursors
+CREATE TABLE public.conversation_read_cursors (
+  conversation_id uuid REFERENCES public.conversations(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  last_read_at timestamptz DEFAULT now() NOT NULL,
+  PRIMARY KEY (conversation_id, user_id)
+);
+
+-- Trigger: auto-update conversation on new message
+CREATE OR REPLACE FUNCTION update_conversation_on_message()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.conversations
+  SET last_message_text = NEW.content, last_message_at = NEW.created_at
+  WHERE id = NEW.conversation_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_message_insert
+  AFTER INSERT ON public.messages
+  FOR EACH ROW EXECUTE FUNCTION update_conversation_on_message();
+
+-- RLS
+ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.conversation_read_cursors ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Participants can view own conversations"
+  ON public.conversations FOR SELECT USING (
+    auth.uid() = client_id OR auth.uid() = attorney_id
+  );
+
+CREATE POLICY "Participants can create conversations"
+  ON public.conversations FOR INSERT WITH CHECK (
+    auth.uid() = client_id OR auth.uid() = attorney_id
+  );
+
+CREATE POLICY "Participants can view messages"
+  ON public.messages FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.conversations
+      WHERE id = conversation_id
+      AND (client_id = auth.uid() OR attorney_id = auth.uid())
+    )
+  );
+
+CREATE POLICY "Participants can send messages"
+  ON public.messages FOR INSERT WITH CHECK (
+    auth.uid() = sender_id AND
+    EXISTS (
+      SELECT 1 FROM public.conversations
+      WHERE id = conversation_id
+      AND (client_id = auth.uid() OR attorney_id = auth.uid())
+    )
+  );
+
+CREATE POLICY "Users can view own read cursors"
+  ON public.conversation_read_cursors FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can upsert own read cursors"
+  ON public.conversation_read_cursors FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own read cursors"
+  ON public.conversation_read_cursors FOR UPDATE USING (auth.uid() = user_id);
+
+-- Enable Realtime for messages
+ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
 ```

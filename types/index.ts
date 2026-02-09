@@ -233,6 +233,58 @@ export interface CaseWithDetails {
   otherParty: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>;
 }
 
+// Messaging types
+export interface Conversation {
+  id: string;
+  request_id: string | null;
+  client_id: string;
+  attorney_id: string;
+  last_message_text: string | null;
+  last_message_at: string | null;
+  created_at: string;
+}
+
+export type ConversationInsert = Omit<Conversation, 'id' | 'last_message_text' | 'last_message_at' | 'created_at'> & {
+  id?: string;
+  last_message_text?: string | null;
+  last_message_at?: string | null;
+  created_at?: string;
+};
+
+export interface ConversationWithDetails extends Conversation {
+  otherParty: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>;
+  unreadCount: number;
+  requestTitle: string | null;
+  requestStatus: RequestStatus | null;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  is_system: boolean;
+  read_at: string | null;
+  created_at: string;
+}
+
+export type MessageInsert = Omit<Message, 'id' | 'is_system' | 'read_at' | 'created_at'> & {
+  id?: string;
+  is_system?: boolean;
+  read_at?: string | null;
+  created_at?: string;
+};
+
+export interface MessageWithSender extends Message {
+  profiles: Pick<Profile, 'full_name' | 'avatar_url'> | null;
+}
+
+export interface ConversationReadCursor {
+  conversation_id: string;
+  user_id: string;
+  last_read_at: string;
+}
+
 export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -313,6 +365,24 @@ export interface Database {
         Row: Review;
         Insert: ReviewInsert;
         Update: never;
+        Relationships: [];
+      };
+      conversations: {
+        Row: Conversation;
+        Insert: ConversationInsert;
+        Update: Partial<Omit<Conversation, 'id' | 'client_id' | 'attorney_id' | 'created_at'>>;
+        Relationships: [];
+      };
+      messages: {
+        Row: Message;
+        Insert: MessageInsert;
+        Update: Partial<Omit<Message, 'id' | 'conversation_id' | 'sender_id' | 'created_at'>>;
+        Relationships: [];
+      };
+      conversation_read_cursors: {
+        Row: ConversationReadCursor;
+        Insert: ConversationReadCursor;
+        Update: Partial<ConversationReadCursor>;
         Relationships: [];
       };
     };

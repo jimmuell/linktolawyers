@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, Linking, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { ChatPanel } from '@/components/ui/chat-panel';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { StatusTimeline } from '@/components/ui/status-timeline';
 import { PRACTICE_AREA_MAP } from '@/constants/practice-areas';
@@ -13,6 +15,7 @@ import { Colors } from '@/constants/theme';
 import { Radii, Spacing } from '@/constants/typography';
 import { US_STATE_MAP } from '@/constants/us-states';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useConversationForRequest } from '@/hooks/use-messages';
 import { useMyQuoteForRequest, useRequestQuotes } from '@/hooks/use-quotes';
 import { useCancelRequest, useDeleteAttachment, useDeleteDraft, useDeleteRequest, useRequest, useUploadAttachment } from '@/hooks/use-requests';
 import { useAuthStore } from '@/stores/auth-store';
@@ -23,9 +26,10 @@ interface RequestDetailScreenProps {
   variant: 'client' | 'attorney';
   isSaved?: boolean;
   onToggleSave?: () => void;
+  initialTab?: 'details' | 'chat';
 }
 
-export function RequestDetailScreen({ requestId, variant, isSaved, onToggleSave }: RequestDetailScreenProps) {
+export function RequestDetailScreen({ requestId, variant, isSaved, onToggleSave, initialTab = 'details' }: RequestDetailScreenProps) {
   const theme = useColorScheme() ?? 'light';
   const colors = Colors[theme];
   const router = useRouter();
@@ -40,6 +44,10 @@ export function RequestDetailScreen({ requestId, variant, isSaved, onToggleSave 
   const { data: myQuote } = useMyQuoteForRequest(variant === 'attorney' ? requestId : undefined);
   const { data: requestQuotes } = useRequestQuotes(variant === 'client' ? requestId : undefined);
   const quoteCount = requestQuotes?.length ?? 0;
+
+  const { data: conversation } = useConversationForRequest(requestId);
+
+  const [activeTab, setActiveTab] = useState<'details' | 'chat'>(initialTab);
 
   const urgencyLabels: Record<string, string> = { low: 'Low', normal: 'Normal', high: 'High', urgent: 'Urgent' };
 
@@ -194,6 +202,20 @@ export function RequestDetailScreen({ requestId, variant, isSaved, onToggleSave 
     }
   };
 
+  // Determine other party info for chat panel
+  const clientName = (request as unknown as { profiles: { full_name: string | null } | null }).profiles?.full_name ?? 'Client';
+  const otherPartyId = variant === 'attorney' ? request.client_id : conversation?.attorney_id;
+  const otherPartyName = variant === 'attorney' ? clientName : 'Attorney';
+
+  // Show chat tab only when there's something to chat about
+  // Attorney can always chat (will lazy-create conversation)
+  // Client can only chat if a conversation already exists
+  const canShowChat = variant === 'attorney' || !!conversation;
+
+  const handleTabSelect = (index: number) => {
+    setActiveTab(index === 0 ? 'details' : 'chat');
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.separator }]}>
@@ -214,186 +236,216 @@ export function RequestDetailScreen({ requestId, variant, isSaved, onToggleSave 
         )}
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.titleRow}>
-          <StatusBadge status={request.status} />
-          <ThemedText style={styles.requestTitle}>{request.title}</ThemedText>
-        </View>
-
-        <StatusTimeline status={request.status} />
-
-        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <DetailRow label="Practice Area" value={PRACTICE_AREA_MAP[request.practice_area] || request.practice_area} />
-          {location && <DetailRow label="Location" value={location} />}
-          {budgetDisplay && <DetailRow label="Budget" value={budgetDisplay} />}
-          <DetailRow label="Urgency" value={urgencyLabels[request.urgency] ?? request.urgency} />
-          <DetailRow
-            label="Submitted"
-            value={new Date(request.created_at).toLocaleDateString('en-US', {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-            isLast
+      {canShowChat && (
+        <View style={styles.segmentedControlContainer}>
+          <SegmentedControl
+            segments={['Details', 'Chat']}
+            selectedIndex={activeTab === 'details' ? 0 : 1}
+            onSelect={handleTabSelect}
           />
         </View>
+      )}
 
-        <View style={styles.descriptionSection}>
-          <ThemedText style={styles.sectionLabel}>Description</ThemedText>
-          <ThemedText style={styles.descriptionText}>{request.description}</ThemedText>
-        </View>
-
-        {((request.request_attachments && request.request_attachments.length > 0) || canAddAttachments) && (
-          <View style={styles.attachmentSection}>
-            <ThemedText style={styles.sectionLabel}>
-              Attachments{request.request_attachments?.length ? ` (${request.request_attachments.length})` : ''}
-            </ThemedText>
-            {request.request_attachments && request.request_attachments.length > 0 && (
-              <View style={styles.attachList}>
-                {request.request_attachments.map((att) => {
-                  const isPdf = att.file_type === 'application/pdf' || att.file_name.endsWith('.pdf');
-                  return (
-                    <View key={att.id} style={[styles.attachItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                      <Pressable style={styles.attachContent} onPress={() => openAttachment(att)}>
-                        {isPdf ? (
-                          <MaterialIcons name="picture-as-pdf" size={32} color={colors.error} />
-                        ) : (
-                          <Image source={{ uri: att.file_url }} style={styles.attachThumb} />
-                        )}
-                        <View style={styles.attachInfo}>
-                          <ThemedText style={styles.attachName} numberOfLines={1}>{att.file_name}</ThemedText>
-                          <ThemedText style={[styles.attachSize, { color: colors.textTertiary }]}>
-                            {att.file_size < 1024 * 1024
-                              ? `${(att.file_size / 1024).toFixed(0)} KB`
-                              : `${(att.file_size / (1024 * 1024)).toFixed(1)} MB`}
-                          </ThemedText>
-                        </View>
-                        <MaterialIcons name="open-in-new" size={18} color={colors.textTertiary} />
-                      </Pressable>
-                      {att.uploaded_by === userId && (
-                        <Pressable
-                          style={styles.attachDelete}
-                          onPress={() => confirmDeleteAttachment(att)}
-                          hitSlop={8}>
-                          <MaterialIcons name="delete-outline" size={20} color={colors.error} />
-                        </Pressable>
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-            {canAddAttachments && (
-              <View style={styles.addAttachRow}>
-                <Pressable
-                  style={[styles.addAttachButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
-                  onPress={handleAddImage}
-                  disabled={uploadingType !== null}>
-                  {uploadingType === 'image' ? (
-                    <ActivityIndicator size="small" color={colors.textTertiary} />
-                  ) : (
-                    <>
-                      <MaterialIcons name="add-photo-alternate" size={22} color={colors.textTertiary} />
-                      <ThemedText style={[styles.addAttachText, { color: colors.textSecondary }]}>Image</ThemedText>
-                    </>
-                  )}
-                </Pressable>
-                <Pressable
-                  style={[styles.addAttachButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
-                  onPress={handleAddPdf}
-                  disabled={uploadingType !== null}>
-                  {uploadingType === 'pdf' ? (
-                    <ActivityIndicator size="small" color={colors.textTertiary} />
-                  ) : (
-                    <>
-                      <MaterialIcons name="picture-as-pdf" size={22} color={colors.textTertiary} />
-                      <ThemedText style={[styles.addAttachText, { color: colors.textSecondary }]}>PDF</ThemedText>
-                    </>
-                  )}
-                </Pressable>
-              </View>
-            )}
+      {activeTab === 'details' ? (
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.titleRow}>
+            <StatusBadge status={request.status} />
+            <ThemedText style={styles.requestTitle}>{request.title}</ThemedText>
           </View>
-        )}
 
-        {variant === 'client' && (
-          <View style={styles.actions}>
-            {(request.status === 'draft' || request.status === 'pending') && (
-              <Pressable
-                style={[styles.primaryActionButton, { backgroundColor: colors.primary }]}
-                onPress={() => router.push(`/(client)/requests/${request.id}/edit`)}>
-                <ThemedText style={[styles.primaryActionText, { color: colors.primaryForeground }]}>
-                  Edit Request
-                </ThemedText>
-              </Pressable>
-            )}
-            {(request.status === 'pending' || request.status === 'quoted') && (
-              <Pressable
-                style={[styles.actionButton, { borderColor: colors.error }]}
-                onPress={handleCancel}
-                disabled={cancelRequest.isPending}>
-                <ThemedText style={[styles.actionText, { color: colors.error }]}>
-                  Cancel Request
-                </ThemedText>
-              </Pressable>
-            )}
-            {request.status === 'draft' && (
-              <Pressable
-                style={[styles.actionButton, { borderColor: colors.error }]}
-                onPress={handleDeleteDraft}
-                disabled={deleteDraft.isPending}>
-                <ThemedText style={[styles.actionText, { color: colors.error }]}>
-                  Delete Draft
-                </ThemedText>
-              </Pressable>
-            )}
-            {request.status === 'cancelled' && (
-              <Pressable
-                style={[styles.actionButton, { borderColor: colors.error }]}
-                onPress={handleDeleteRequest}
-                disabled={deleteRequest.isPending}>
-                <ThemedText style={[styles.actionText, { color: colors.error }]}>
-                  Delete Request
-                </ThemedText>
-              </Pressable>
-            )}
+          <StatusTimeline status={request.status} />
+
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <DetailRow label="Practice Area" value={PRACTICE_AREA_MAP[request.practice_area] || request.practice_area} />
+            {location && <DetailRow label="Location" value={location} />}
+            {budgetDisplay && <DetailRow label="Budget" value={budgetDisplay} />}
+            <DetailRow label="Urgency" value={urgencyLabels[request.urgency] ?? request.urgency} />
+            <DetailRow
+              label="Submitted"
+              value={new Date(request.created_at).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+              isLast
+            />
           </View>
-        )}
 
-        {variant === 'attorney' && (
-          <View style={styles.actions}>
-            {myQuote ? (
-              <Pressable
-                style={[styles.primaryActionButton, { backgroundColor: colors.primary }]}
-                onPress={() => router.push(`/(attorney)/quotes/${myQuote.id}`)}>
-                <ThemedText style={[styles.primaryActionText, { color: colors.primaryForeground }]}>
-                  View Your Quote
-                </ThemedText>
-              </Pressable>
-            ) : (
-              <Pressable
-                style={[styles.primaryActionButton, { backgroundColor: colors.primary }]}
-                onPress={() => router.push(`/(attorney)/quotes/new?requestId=${requestId}`)}>
-                <ThemedText style={[styles.primaryActionText, { color: colors.primaryForeground }]}>
-                  Submit Quote
-                </ThemedText>
-              </Pressable>
-            )}
+          <View style={styles.descriptionSection}>
+            <ThemedText style={styles.sectionLabel}>Description</ThemedText>
+            <ThemedText style={styles.descriptionText}>{request.description}</ThemedText>
           </View>
-        )}
 
-        {variant === 'client' && (request?.status === 'quoted' || request?.status === 'accepted') && quoteCount > 0 && (
-          <View style={styles.actions}>
-            <Pressable
-              style={[styles.primaryActionButton, { backgroundColor: colors.primary }]}
-              onPress={() => router.push(`/(client)/requests/${requestId}/quotes`)}>
-              <ThemedText style={[styles.primaryActionText, { color: colors.primaryForeground }]}>
-                View Quotes ({quoteCount})
+          {((request.request_attachments && request.request_attachments.length > 0) || canAddAttachments) && (
+            <View style={styles.attachmentSection}>
+              <ThemedText style={styles.sectionLabel}>
+                Attachments{request.request_attachments?.length ? ` (${request.request_attachments.length})` : ''}
               </ThemedText>
-            </Pressable>
+              {request.request_attachments && request.request_attachments.length > 0 && (
+                <View style={styles.attachList}>
+                  {request.request_attachments.map((att) => {
+                    const isPdf = att.file_type === 'application/pdf' || att.file_name.endsWith('.pdf');
+                    return (
+                      <View key={att.id} style={[styles.attachItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        <Pressable style={styles.attachContent} onPress={() => openAttachment(att)}>
+                          {isPdf ? (
+                            <MaterialIcons name="picture-as-pdf" size={32} color={colors.error} />
+                          ) : (
+                            <Image source={{ uri: att.file_url }} style={styles.attachThumb} />
+                          )}
+                          <View style={styles.attachInfo}>
+                            <ThemedText style={styles.attachName} numberOfLines={1}>{att.file_name}</ThemedText>
+                            <ThemedText style={[styles.attachSize, { color: colors.textTertiary }]}>
+                              {att.file_size < 1024 * 1024
+                                ? `${(att.file_size / 1024).toFixed(0)} KB`
+                                : `${(att.file_size / (1024 * 1024)).toFixed(1)} MB`}
+                            </ThemedText>
+                          </View>
+                          <MaterialIcons name="open-in-new" size={18} color={colors.textTertiary} />
+                        </Pressable>
+                        {att.uploaded_by === userId && (
+                          <Pressable
+                            style={styles.attachDelete}
+                            onPress={() => confirmDeleteAttachment(att)}
+                            hitSlop={8}>
+                            <MaterialIcons name="delete-outline" size={20} color={colors.error} />
+                          </Pressable>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+              {canAddAttachments && (
+                <View style={styles.addAttachRow}>
+                  <Pressable
+                    style={[styles.addAttachButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                    onPress={handleAddImage}
+                    disabled={uploadingType !== null}>
+                    {uploadingType === 'image' ? (
+                      <ActivityIndicator size="small" color={colors.textTertiary} />
+                    ) : (
+                      <>
+                        <MaterialIcons name="add-photo-alternate" size={22} color={colors.textTertiary} />
+                        <ThemedText style={[styles.addAttachText, { color: colors.textSecondary }]}>Image</ThemedText>
+                      </>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    style={[styles.addAttachButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                    onPress={handleAddPdf}
+                    disabled={uploadingType !== null}>
+                    {uploadingType === 'pdf' ? (
+                      <ActivityIndicator size="small" color={colors.textTertiary} />
+                    ) : (
+                      <>
+                        <MaterialIcons name="picture-as-pdf" size={22} color={colors.textTertiary} />
+                        <ThemedText style={[styles.addAttachText, { color: colors.textSecondary }]}>PDF</ThemedText>
+                      </>
+                    )}
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          )}
+
+          {variant === 'client' && (
+            <View style={styles.actions}>
+              {(request.status === 'draft' || request.status === 'pending') && (
+                <Pressable
+                  style={[styles.primaryActionButton, { backgroundColor: colors.primary }]}
+                  onPress={() => router.push(`/(client)/requests/${request.id}/edit`)}>
+                  <ThemedText style={[styles.primaryActionText, { color: colors.primaryForeground }]}>
+                    Edit Request
+                  </ThemedText>
+                </Pressable>
+              )}
+              {(request.status === 'pending' || request.status === 'quoted') && (
+                <Pressable
+                  style={[styles.actionButton, { borderColor: colors.error }]}
+                  onPress={handleCancel}
+                  disabled={cancelRequest.isPending}>
+                  <ThemedText style={[styles.actionText, { color: colors.error }]}>
+                    Cancel Request
+                  </ThemedText>
+                </Pressable>
+              )}
+              {request.status === 'draft' && (
+                <Pressable
+                  style={[styles.actionButton, { borderColor: colors.error }]}
+                  onPress={handleDeleteDraft}
+                  disabled={deleteDraft.isPending}>
+                  <ThemedText style={[styles.actionText, { color: colors.error }]}>
+                    Delete Draft
+                  </ThemedText>
+                </Pressable>
+              )}
+              {request.status === 'cancelled' && (
+                <Pressable
+                  style={[styles.actionButton, { borderColor: colors.error }]}
+                  onPress={handleDeleteRequest}
+                  disabled={deleteRequest.isPending}>
+                  <ThemedText style={[styles.actionText, { color: colors.error }]}>
+                    Delete Request
+                  </ThemedText>
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          {variant === 'attorney' && (
+            <View style={styles.actions}>
+              {myQuote ? (
+                <Pressable
+                  style={[styles.primaryActionButton, { backgroundColor: colors.primary }]}
+                  onPress={() => router.push(`/(attorney)/quotes/${myQuote.id}`)}>
+                  <ThemedText style={[styles.primaryActionText, { color: colors.primaryForeground }]}>
+                    View Your Quote
+                  </ThemedText>
+                </Pressable>
+              ) : (
+                <Pressable
+                  style={[styles.primaryActionButton, { backgroundColor: colors.primary }]}
+                  onPress={() => router.push(`/(attorney)/quotes/new?requestId=${requestId}`)}>
+                  <ThemedText style={[styles.primaryActionText, { color: colors.primaryForeground }]}>
+                    Submit Quote
+                  </ThemedText>
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          {variant === 'client' && (request?.status === 'quoted' || request?.status === 'accepted') && quoteCount > 0 && (
+            <View style={styles.actions}>
+              <Pressable
+                style={[styles.primaryActionButton, { backgroundColor: colors.primary }]}
+                onPress={() => router.push(`/(client)/requests/${requestId}/quotes`)}>
+                <ThemedText style={[styles.primaryActionText, { color: colors.primaryForeground }]}>
+                  View Quotes ({quoteCount})
+                </ThemedText>
+              </Pressable>
+            </View>
+          )}
+        </ScrollView>
+      ) : (
+        otherPartyId ? (
+          <ChatPanel
+            conversationId={conversation?.id}
+            requestId={requestId}
+            otherPartyId={otherPartyId}
+            otherPartyName={otherPartyName}
+            requestTitle={request.title}
+            variant={variant}
+          />
+        ) : (
+          <View style={styles.center}>
+            <MaterialIcons name="chat-bubble-outline" size={40} color={colors.textTertiary} />
+            <ThemedText style={[styles.emptyChat, { color: colors.textTertiary }]}>
+              No messages yet
+            </ThemedText>
           </View>
-        )}
-      </ScrollView>
+        )
+      )}
     </SafeAreaView>
   );
 }
@@ -431,6 +483,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
+  },
+  segmentedControlContainer: {
+    paddingVertical: Spacing.sm,
   },
   scroll: {
     flex: 1,
@@ -561,5 +616,9 @@ const styles = StyleSheet.create({
   primaryActionText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  emptyChat: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

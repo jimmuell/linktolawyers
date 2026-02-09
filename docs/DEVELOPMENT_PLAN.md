@@ -200,56 +200,56 @@
 
 ### 4.1 Database Schema (Phase 4)
 
-- [ ] Create `conversations` table
+- [x] Create `conversations` table
 - [ ] Create `conversation_participants` table
-- [ ] Create `messages` table
+- [x] Create `messages` table
 - [ ] Create `message_attachments` table
 - [ ] Create `broadcasts` table (admin)
-- [ ] Set up RLS policies for messaging
-- [ ] Set up Supabase Realtime subscriptions
+- [x] Set up RLS policies for messaging
+- [x] Set up Supabase Realtime subscriptions
 
 ### 4.2 Conversations List
 
-- [ ] `(tabs)/messages/index` - Conversation list screen
-- [ ] Conversation card (avatar, name, last message, time, unread badge)
-- [ ] Sort by recent activity
-- [ ] Unread message count badge on tab
-- [ ] Pull-to-refresh
-- [ ] Search conversations
+- [x] `(tabs)/messages/index` - Conversation list screen
+- [x] Conversation card (avatar, name, last message, time, unread badge)
+- [x] Sort by recent activity
+- [x] Unread message count badge on tab
+- [x] Pull-to-refresh
+- [x] Search conversations
 
 ### 4.3 Chat Interface
 
-- [ ] `(tabs)/messages/[conversationId]` - Chat view
-- [ ] Message bubbles (sent/received styling)
-- [ ] Timestamps
-- [ ] Auto-scroll to bottom
-- [ ] Load more (older messages)
-- [ ] Typing indicators (Supabase Realtime)
-- [ ] Read receipts
+- [x] `(tabs)/messages/[conversationId]` - Chat view
+- [x] Message bubbles (sent/received styling)
+- [x] Timestamps
+- [x] Auto-scroll to bottom
+- [x] Load more (older messages)
+- [x] Typing indicators (Supabase Realtime)
+- [x] Read receipts
 - [ ] Online status indicator
 
 ### 4.4 Message Types
 
-- [ ] Text messages
+- [x] Text messages
 - [ ] Image attachments (camera + gallery)
 - [ ] Document attachments (PDF, etc.)
-- [ ] System messages (quote accepted, case created, etc.)
+- [x] System messages (quote accepted, case created, etc.)
 - [ ] File preview before sending
 - [ ] Image viewer (full screen)
 - [ ] Document download
 
 ### 4.5 Message Threading
 
-- [ ] Context-based conversations (request, quote, case)
-- [ ] Show conversation context header
-- [ ] Link to related request/quote/case
+- [x] Context-based conversations (request, quote, case)
+- [x] Show conversation context header
+- [x] Link to related request/quote/case
 
 ### 4.6 Realtime Features
 
-- [ ] Supabase Realtime subscription for new messages
-- [ ] Typing indicator broadcast
+- [x] Supabase Realtime subscription for new messages
+- [x] Typing indicator broadcast
 - [ ] Online presence tracking
-- [ ] Optimistic UI updates
+- [x] Optimistic UI updates
 
 ### 4.7 Notifications (Phase 4)
 

@@ -17,8 +17,10 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { AttorneyProfileModal } from '@/components/ui/attorney-profile-modal';
+import { ChatPanel } from '@/components/ui/chat-panel';
 import { formatFee } from '@/components/ui/quote-card';
 import { ReviewModal } from '@/components/ui/review-modal';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { PRACTICE_AREA_MAP } from '@/constants/practice-areas';
 import { PRICING_TYPE_MAP } from '@/constants/pricing-types';
 import { Colors } from '@/constants/theme';
@@ -36,19 +38,23 @@ import {
   useSubmitReview,
   useUnarchiveCase,
 } from '@/hooks/use-cases';
+import { useConversationForRequest } from '@/hooks/use-messages';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/stores/auth-store';
 
 interface CaseDetailScreenProps {
   requestId: string;
   variant: 'client' | 'attorney';
+  initialTab?: 'details' | 'chat';
 }
 
-export function CaseDetailScreen({ requestId, variant }: CaseDetailScreenProps) {
+export function CaseDetailScreen({ requestId, variant, initialTab = 'details' }: CaseDetailScreenProps) {
   const theme = useColorScheme() ?? 'light';
   const colors = Colors[theme];
   const router = useRouter();
   const userId = useAuthStore((s) => s.user?.id);
+
+  const [activeTab, setActiveTab] = useState<'details' | 'chat'>(initialTab);
 
   const { data: caseData, isLoading: casesLoading } = useCaseDetail(requestId, variant);
 
@@ -60,6 +66,8 @@ export function CaseDetailScreen({ requestId, variant }: CaseDetailScreenProps) 
   const deleteArchivedCase = useDeleteArchivedCase();
   const { data: review } = useCaseReview(requestId);
   const submitReview = useSubmitReview();
+
+  const { data: conversation } = useConversationForRequest(requestId);
 
   const [noteText, setNoteText] = useState('');
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -404,6 +412,10 @@ export function CaseDetailScreen({ requestId, variant }: CaseDetailScreenProps) 
     );
   };
 
+  const handleTabSelect = (index: number) => {
+    setActiveTab(index === 0 ? 'details' : 'chat');
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.separator }]}>
@@ -414,63 +426,82 @@ export function CaseDetailScreen({ requestId, variant }: CaseDetailScreenProps) 
         <View style={{ width: 24 }} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}>
-        <FlatList
-          data={notes ?? []}
-          keyExtractor={(item) => item.id}
-          renderItem={renderNote}
-          ListHeaderComponent={renderHeader}
-          ListEmptyComponent={
-            notesLoading ? (
-              <ActivityIndicator style={styles.notesLoading} color={colors.primary} />
-            ) : (
-              <ThemedText style={[styles.emptyNotes, { color: colors.textTertiary }]}>
-                No notes yet. Add the first update.
-              </ThemedText>
-            )
-          }
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
+      <View style={styles.segmentedControlContainer}>
+        <SegmentedControl
+          segments={['Details', 'Chat']}
+          selectedIndex={activeTab === 'details' ? 0 : 1}
+          onSelect={handleTabSelect}
         />
+      </View>
 
-        {(isActive || isClosed) && (
-          <View style={[styles.inputBar, { borderTopColor: colors.separator, backgroundColor: colors.background }]}>
-            <TextInput
-              style={[
-                styles.noteInput,
-                {
-                  borderColor: colors.inputBorder,
-                  backgroundColor: colors.inputBackground,
-                  color: colors.text,
-                },
-              ]}
-              value={noteText}
-              onChangeText={setNoteText}
-              placeholder="Add a note..."
-              placeholderTextColor={colors.inputPlaceholder}
-              multiline
-              maxLength={1000}
-            />
-            <Pressable
-              style={[styles.sendButton, { backgroundColor: noteText.trim() ? colors.primary : colors.surface }]}
-              onPress={handleAddNote}
-              disabled={!noteText.trim() || addNote.isPending}>
-              {addNote.isPending ? (
-                <ActivityIndicator size="small" color={colors.primaryForeground} />
+      {activeTab === 'details' ? (
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={0}>
+          <FlatList
+            data={notes ?? []}
+            keyExtractor={(item) => item.id}
+            renderItem={renderNote}
+            ListHeaderComponent={renderHeader}
+            ListEmptyComponent={
+              notesLoading ? (
+                <ActivityIndicator style={styles.notesLoading} color={colors.primary} />
               ) : (
-                <MaterialIcons
-                  name="send"
-                  size={20}
-                  color={noteText.trim() ? colors.primaryForeground : colors.textTertiary}
-                />
-              )}
-            </Pressable>
-          </View>
-        )}
-      </KeyboardAvoidingView>
+                <ThemedText style={[styles.emptyNotes, { color: colors.textTertiary }]}>
+                  No notes yet. Add the first update.
+                </ThemedText>
+              )
+            }
+            contentContainerStyle={styles.listContent}
+            ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
+          />
+
+          {(isActive || isClosed) && (
+            <View style={[styles.inputBar, { borderTopColor: colors.separator, backgroundColor: colors.background }]}>
+              <TextInput
+                style={[
+                  styles.noteInput,
+                  {
+                    borderColor: colors.inputBorder,
+                    backgroundColor: colors.inputBackground,
+                    color: colors.text,
+                  },
+                ]}
+                value={noteText}
+                onChangeText={setNoteText}
+                placeholder="Add a note..."
+                placeholderTextColor={colors.inputPlaceholder}
+                multiline
+                maxLength={1000}
+              />
+              <Pressable
+                style={[styles.sendButton, { backgroundColor: noteText.trim() ? colors.primary : colors.surface }]}
+                onPress={handleAddNote}
+                disabled={!noteText.trim() || addNote.isPending}>
+                {addNote.isPending ? (
+                  <ActivityIndicator size="small" color={colors.primaryForeground} />
+                ) : (
+                  <MaterialIcons
+                    name="send"
+                    size={20}
+                    color={noteText.trim() ? colors.primaryForeground : colors.textTertiary}
+                  />
+                )}
+              </Pressable>
+            </View>
+          )}
+        </KeyboardAvoidingView>
+      ) : (
+        <ChatPanel
+          conversationId={conversation?.id}
+          requestId={requestId}
+          otherPartyId={otherParty.id}
+          otherPartyName={otherParty.full_name ?? 'User'}
+          requestTitle={request.title}
+          variant={variant}
+        />
+      )}
 
       <ReviewModal
         visible={showReviewModal}
@@ -526,6 +557,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
+  },
+  segmentedControlContainer: {
+    paddingVertical: Spacing.sm,
   },
   listContent: {
     padding: Spacing.lg,
