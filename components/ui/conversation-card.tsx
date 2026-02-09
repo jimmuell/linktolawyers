@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { Radii, Spacing } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { usePresenceStore } from '@/stores/presence-store';
 import type { ConversationWithDetails } from '@/types';
 
 interface ConversationCardProps {
@@ -34,6 +35,7 @@ export function ConversationCard({ conversation, onPress }: ConversationCardProp
   const theme = useColorScheme() ?? 'light';
   const colors = Colors[theme];
   const hasUnread = conversation.unreadCount > 0;
+  const isOnline = usePresenceStore((s) => s.onlineUsers.has(conversation.otherParty.id));
 
   return (
     <Pressable
@@ -42,17 +44,22 @@ export function ConversationCard({ conversation, onPress }: ConversationCardProp
         { backgroundColor: pressed ? colors.surface : colors.background },
       ]}
       onPress={onPress}>
-      {/* Avatar */}
-      {conversation.otherParty.avatar_url ? (
-        <Image
-          source={{ uri: conversation.otherParty.avatar_url }}
-          style={styles.avatar}
-        />
-      ) : (
-        <View style={[styles.avatar, { backgroundColor: colors.surface }]}>
-          <MaterialIcons name="person" size={24} color={colors.textTertiary} />
-        </View>
-      )}
+      {/* Avatar with online indicator */}
+      <View style={styles.avatarWrapper}>
+        {conversation.otherParty.avatar_url ? (
+          <Image
+            source={{ uri: conversation.otherParty.avatar_url }}
+            style={styles.avatar}
+          />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: colors.surface }]}>
+            <MaterialIcons name="person" size={24} color={colors.textTertiary} />
+          </View>
+        )}
+        {isOnline && (
+          <View style={[styles.onlineDot, { borderColor: colors.background }]} />
+        )}
+      </View>
 
       {/* Content */}
       <View style={styles.content}>
@@ -106,12 +113,25 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     gap: Spacing.md,
   },
+  avatarWrapper: {
+    position: 'relative',
+  },
   avatar: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#34C759',
+    borderWidth: 2,
   },
   content: {
     flex: 1,

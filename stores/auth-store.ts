@@ -86,6 +86,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   signOut: async () => {
     set({ isLoading: true });
     try {
+      // Remove all push tokens for this user before signing out
+      const userId = get().user?.id;
+      if (userId) {
+        await supabase
+          .from('push_tokens')
+          .delete()
+          .eq('user_id', userId);
+      }
+
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       set({ session: null, user: null, profile: null, attorneyProfile: null });

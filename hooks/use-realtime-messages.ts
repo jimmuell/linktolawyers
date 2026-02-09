@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
-import type { MessageWithSender } from '@/types';
+import type { MessageAttachment, MessageWithSender } from '@/types';
 
 import { messageKeys } from './use-messages';
 
@@ -32,16 +32,23 @@ export function useRealtimeMessages(conversationId: string | undefined) {
           // Don't add own messages (already handled by optimistic update)
           if (newMessage.sender_id === userId) return;
 
-          // Fetch sender profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', newMessage.sender_id)
-            .single();
+          // Fetch sender profile and attachments in parallel
+          const [{ data: profile }, { data: attachments }] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('full_name, avatar_url')
+              .eq('id', newMessage.sender_id)
+              .single(),
+            supabase
+              .from('message_attachments')
+              .select('*')
+              .eq('message_id', newMessage.id),
+          ]);
 
           const messageWithSender: MessageWithSender = {
             ...newMessage,
             profiles: profile as { full_name: string | null; avatar_url: string | null } | null,
+            message_attachments: (attachments as unknown as MessageAttachment[]) ?? [],
           };
 
           // Prepend to cache

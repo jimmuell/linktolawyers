@@ -82,11 +82,11 @@
 
 ### 1.8 Push Notifications
 
-- [ ] Request push notification permissions
-- [ ] Register push token with backend
-- [ ] Store push tokens in database
-- [ ] Handle notification received (foreground)
-- [ ] Handle notification tap (background)
+- [x] Request push notification permissions
+- [x] Register push token with backend
+- [x] Store push tokens in database
+- [x] Handle notification received (foreground)
+- [x] Handle notification tap (background)
 
 ---
 
@@ -203,7 +203,7 @@
 - [x] Create `conversations` table
 - [ ] Create `conversation_participants` table
 - [x] Create `messages` table
-- [ ] Create `message_attachments` table
+- [x] Create `message_attachments` table
 - [ ] Create `broadcasts` table (admin)
 - [x] Set up RLS policies for messaging
 - [x] Set up Supabase Realtime subscriptions
@@ -226,17 +226,17 @@
 - [x] Load more (older messages)
 - [x] Typing indicators (Supabase Realtime)
 - [x] Read receipts
-- [ ] Online status indicator
+- [x] Online status indicator
 
 ### 4.4 Message Types
 
 - [x] Text messages
-- [ ] Image attachments (camera + gallery)
-- [ ] Document attachments (PDF, etc.)
+- [x] Image attachments (camera + gallery)
+- [x] Document attachments (PDF, etc.)
 - [x] System messages (quote accepted, case created, etc.)
-- [ ] File preview before sending
-- [ ] Image viewer (full screen)
-- [ ] Document download
+- [x] File preview before sending
+- [x] Image viewer (full screen)
+- [x] Document download
 
 ### 4.5 Message Threading
 
@@ -248,13 +248,13 @@
 
 - [x] Supabase Realtime subscription for new messages
 - [x] Typing indicator broadcast
-- [ ] Online presence tracking
+- [x] Online presence tracking
 - [x] Optimistic UI updates
 
 ### 4.7 Notifications (Phase 4)
 
-- [ ] New message push notification
-- [ ] Notification tap opens specific conversation
+- [x] New message push notification
+- [x] Notification tap opens specific conversation
 
 ---
 

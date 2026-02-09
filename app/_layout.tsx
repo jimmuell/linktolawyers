@@ -9,6 +9,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { Colors } from '@/constants/theme';
 import { ThemeProvider, useThemeContext } from '@/contexts/theme-context';
+import { useGlobalPresence } from '@/hooks/use-presence';
+import { useRegisterPushToken } from '@/hooks/use-push-notifications';
 import { getRoleHomePath } from '@/lib/role-routes';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -59,6 +61,16 @@ function NavigationThemeWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
+function PresenceTracker() {
+  useGlobalPresence();
+  return null;
+}
+
+function NotificationHandler() {
+  useRegisterPushToken();
+  return null;
+}
+
 function ProtectedRouteGuard({ children }: { children: React.ReactNode }) {
   const { isInitialized, isAuthenticated } = useAuth();
   const profile = useAuthStore((s) => s.profile);
@@ -81,7 +93,13 @@ function ProtectedRouteGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isInitialized, isAuthenticated, profile, segments, router]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {isAuthenticated && <PresenceTracker />}
+      {isAuthenticated && <NotificationHandler />}
+      {children}
+    </>
+  );
 }
 
 export default function RootLayout() {

@@ -499,6 +499,7 @@ export function CaseDetailScreen({ requestId, variant, initialTab = 'details' }:
           otherPartyId={otherParty.id}
           otherPartyName={otherParty.full_name ?? 'User'}
           requestTitle={request.title}
+          requestStatus={request.status}
           variant={variant}
         />
       )}

@@ -435,6 +435,7 @@ export function RequestDetailScreen({ requestId, variant, isSaved, onToggleSave,
             otherPartyId={otherPartyId}
             otherPartyName={otherPartyName}
             requestTitle={request.title}
+            requestStatus={request.status}
             variant={variant}
           />
         ) : (

@@ -9,12 +9,50 @@ import type {
   ConversationReadCursor,
   ConversationWithDetails,
   Message,
+  MessageAttachment,
+  MessageAttachmentInsert,
   MessageWithSender,
   Profile,
   RequestStatus,
+  StagedAttachment,
 } from '@/types';
 
 const PAGE_SIZE = 50;
+
+// ─── Push notification helper ───────────────────────────────────
+
+function sendPushNotification({
+  recipientId,
+  senderName,
+  messageContent,
+  requestId,
+  requestStatus,
+  recipientRole,
+}: {
+  recipientId: string;
+  senderName: string;
+  messageContent: string;
+  requestId: string;
+  requestStatus: RequestStatus;
+  recipientRole: 'client' | 'attorney';
+}) {
+  const truncatedBody =
+    messageContent.length > 100 ? `${messageContent.slice(0, 97)}...` : messageContent;
+
+  // Fire-and-forget
+  supabase.functions
+    .invoke('send-push-notification', {
+      body: {
+        recipientId,
+        title: senderName,
+        body: truncatedBody,
+        data: { requestId, requestStatus, role: recipientRole },
+      },
+    })
+    .catch(() => {
+      // Ignore errors — push is best-effort
+    });
+}
 
 export const messageKeys = {
   all: ['messages'] as const,
@@ -145,7 +183,7 @@ export function useConversationMessages(conversationId: string | undefined) {
     queryFn: async ({ pageParam }): Promise<MessageWithSender[]> => {
       let query = supabase
         .from('messages')
-        .select('*, profiles!sender_id(full_name, avatar_url)' as '*')
+        .select('*, profiles!sender_id(full_name, avatar_url), message_attachments(*)' as '*')
         .eq('conversation_id', conversationId!)
         .order('created_at', { ascending: false })
         .limit(PAGE_SIZE);
@@ -180,6 +218,11 @@ export function useSendMessage() {
     }: {
       conversationId: string;
       content: string;
+      recipientId?: string;
+      senderName?: string;
+      requestId?: string;
+      requestStatus?: RequestStatus;
+      recipientRole?: 'client' | 'attorney';
     }) => {
       const { data, error } = await supabase
         .from('messages')
@@ -194,7 +237,7 @@ export function useSendMessage() {
       if (error) throw error;
       return data as unknown as MessageWithSender;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       // Optimistic: prepend message to the cache
       queryClient.setQueryData(
         messageKeys.conversationMessages(data.conversation_id),
@@ -207,6 +250,217 @@ export function useSendMessage() {
       );
       // Refresh conversations list
       queryClient.invalidateQueries({ queryKey: messageKeys.conversations(userId ?? '') });
+
+      // Send push notification
+      if (
+        variables.recipientId &&
+        variables.senderName &&
+        variables.requestId &&
+        variables.requestStatus &&
+        variables.recipientRole
+      ) {
+        sendPushNotification({
+          recipientId: variables.recipientId,
+          senderName: variables.senderName,
+          messageContent: data.content,
+          requestId: variables.requestId,
+          requestStatus: variables.requestStatus,
+          recipientRole: variables.recipientRole,
+        });
+      }
+    },
+  });
+}
+
+// ─── Upload message attachment ───────────────────────────────────
+
+export function useUploadMessageAttachment() {
+  return useMutation({
+    mutationFn: async ({
+      conversationId,
+      messageId,
+      fileUri,
+      fileName,
+      fileType,
+      fileSize,
+      width,
+      height,
+    }: {
+      conversationId: string;
+      messageId: string;
+      fileUri: string;
+      fileName: string;
+      fileType: string;
+      fileSize: number;
+      width: number | null;
+      height: number | null;
+    }): Promise<MessageAttachment> => {
+      const { readAsStringAsync } = await import('expo-file-system/legacy');
+      const { decode } = await import('base64-arraybuffer');
+
+      const base64 = await readAsStringAsync(fileUri, { encoding: 'base64' });
+      const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `conversations/${conversationId}/${Date.now()}_${safeName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('message-attachments')
+        .upload(filePath, decode(base64), {
+          contentType: fileType,
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('message-attachments')
+        .getPublicUrl(filePath);
+
+      const attachment: MessageAttachmentInsert = {
+        message_id: messageId,
+        file_url: urlData.publicUrl,
+        file_name: fileName,
+        file_type: fileType,
+        file_size: fileSize,
+        width,
+        height,
+      };
+
+      const { data, error } = await supabase
+        .from('message_attachments')
+        .insert(attachment as never)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as unknown as MessageAttachment;
+    },
+  });
+}
+
+// ─── Delete message attachment ───────────────────────────────────
+
+export function useDeleteMessageAttachment() {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
+
+  return useMutation({
+    mutationFn: async ({
+      attachmentId,
+      conversationId,
+    }: {
+      attachmentId: string;
+      conversationId: string;
+    }) => {
+      const { error } = await supabase
+        .from('message_attachments')
+        .delete()
+        .eq('id', attachmentId);
+
+      if (error) throw error;
+      return { attachmentId, conversationId };
+    },
+    onSuccess: ({ conversationId }) => {
+      queryClient.invalidateQueries({
+        queryKey: messageKeys.conversationMessages(conversationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: messageKeys.conversations(userId ?? ''),
+      });
+    },
+  });
+}
+
+// ─── Send message with attachments ──────────────────────────────
+
+export function useSendMessageWithAttachments() {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
+  const uploadAttachment = useUploadMessageAttachment();
+
+  return useMutation({
+    mutationFn: async ({
+      conversationId,
+      content,
+      attachments,
+    }: {
+      conversationId: string;
+      content: string;
+      attachments: StagedAttachment[];
+      recipientId?: string;
+      senderName?: string;
+      requestId?: string;
+      requestStatus?: RequestStatus;
+      recipientRole?: 'client' | 'attorney';
+    }) => {
+      // Determine content if empty
+      const messageContent =
+        content.trim() ||
+        (attachments.some((a) => a.fileType.startsWith('image/'))
+          ? 'Sent an image'
+          : 'Sent a document');
+
+      // 1. Send the message
+      const { data: message, error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: userId!,
+          content: messageContent,
+        } as never)
+        .select('*, profiles!sender_id(full_name, avatar_url)' as '*')
+        .single();
+
+      if (messageError) throw messageError;
+      const msg = message as unknown as MessageWithSender;
+
+      // 2. Upload all attachments in parallel
+      const uploadedAttachments = await Promise.all(
+        attachments.map((a) =>
+          uploadAttachment.mutateAsync({
+            conversationId,
+            messageId: msg.id,
+            fileUri: a.uri,
+            fileName: a.fileName,
+            fileType: a.fileType,
+            fileSize: a.fileSize,
+            width: a.width ?? null,
+            height: a.height ?? null,
+          }),
+        ),
+      );
+
+      return { ...msg, message_attachments: uploadedAttachments };
+    },
+    onSuccess: (data, variables) => {
+      // Prepend message with attachments to cache
+      queryClient.setQueryData(
+        messageKeys.conversationMessages(data.conversation_id),
+        (old: { pages: MessageWithSender[][]; pageParams: (string | null)[] } | undefined) => {
+          if (!old) return old;
+          const newPages = [...old.pages];
+          newPages[0] = [data, ...(newPages[0] ?? [])];
+          return { ...old, pages: newPages };
+        },
+      );
+      queryClient.invalidateQueries({ queryKey: messageKeys.conversations(userId ?? '') });
+
+      // Send push notification
+      if (
+        variables.recipientId &&
+        variables.senderName &&
+        variables.requestId &&
+        variables.requestStatus &&
+        variables.recipientRole
+      ) {
+        sendPushNotification({
+          recipientId: variables.recipientId,
+          senderName: variables.senderName,
+          messageContent: data.content,
+          requestId: variables.requestId,
+          requestStatus: variables.requestStatus,
+          recipientRole: variables.recipientRole,
+        });
+      }
     },
   });
 }

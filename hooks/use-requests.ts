@@ -215,7 +215,8 @@ export function useUploadAttachment() {
       const { decode } = await import('base64-arraybuffer');
 
       const base64 = await readAsStringAsync(fileUri, { encoding: 'base64' });
-      const filePath = `${requestId}/${Date.now()}_${fileName}`;
+      const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `${requestId}/${Date.now()}_${safeName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('request-attachments')

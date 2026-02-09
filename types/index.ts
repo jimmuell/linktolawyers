@@ -275,8 +275,35 @@ export type MessageInsert = Omit<Message, 'id' | 'is_system' | 'read_at' | 'crea
   created_at?: string;
 };
 
+export interface MessageAttachment {
+  id: string;
+  message_id: string;
+  file_url: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  width: number | null;
+  height: number | null;
+  created_at: string;
+}
+
+export type MessageAttachmentInsert = Omit<MessageAttachment, 'id' | 'created_at'> & {
+  id?: string;
+  created_at?: string;
+};
+
+export interface StagedAttachment {
+  uri: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  width?: number;
+  height?: number;
+}
+
 export interface MessageWithSender extends Message {
   profiles: Pick<Profile, 'full_name' | 'avatar_url'> | null;
+  message_attachments?: MessageAttachment[];
 }
 
 export interface ConversationReadCursor {
@@ -377,6 +404,12 @@ export interface Database {
         Row: Message;
         Insert: MessageInsert;
         Update: Partial<Omit<Message, 'id' | 'conversation_id' | 'sender_id' | 'created_at'>>;
+        Relationships: [];
+      };
+      message_attachments: {
+        Row: MessageAttachment;
+        Insert: MessageAttachmentInsert;
+        Update: Partial<Omit<MessageAttachment, 'id' | 'message_id' | 'created_at'>>;
         Relationships: [];
       };
       conversation_read_cursors: {

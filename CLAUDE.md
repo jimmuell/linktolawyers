@@ -41,7 +41,7 @@ eas build --profile production --platform ios
 - Client state: Zustand (stores in `stores/`)
 - Form state: react-hook-form + Zod validation schemas (`lib/validators.ts`)
 
-**Database**: Supabase Postgres with tables: `profiles` (id, updated_at, username, full_name, avatar_url, website, role), `requests` (id, client_id, title, description, practice_area, state, city, budget_min, budget_max, urgency, status, created_at, updated_at), `request_attachments` (id, request_id, file_url, file_name, file_type, file_size, created_at), `saved_requests` (attorney_id, request_id), `hidden_requests` (attorney_id, request_id), `quotes` (id, request_id, attorney_id, pricing_type, fee_amount, estimated_hours, scope_of_work, estimated_timeline, terms, valid_until, status, decline_reason, viewed_at, created_at, updated_at) with `UNIQUE(request_id, attorney_id)`, `quote_templates` (id, attorney_id, name, pricing_type, fee_amount, estimated_hours, scope_of_work, estimated_timeline, terms, created_at, updated_at). The `role` column uses a `user_role` enum (`'client' | 'attorney'`). The `urgency` column uses `request_urgency` enum, `status` uses `request_status` enum. The `pricing_type` column uses `pricing_type` enum (`flat_fee | hourly | retainer | contingency`), `quote status` uses `quote_status` enum (`draft | submitted | viewed | accepted | declined | withdrawn | expired`). A DB trigger `update_request_status_on_quote()` auto-updates request status to `quoted` on first quote insert and to `accepted` when a quote is accepted (also auto-declines other quotes). Case management: `case_notes` (id, request_id, user_id, content, created_at) stores activity feed notes for active/closed cases, `reviews` (id, request_id, client_id, attorney_id, rating 1-5, comment, created_at, UNIQUE on request_id) stores client ratings after case closure. An accepted request represents an active case; attorneys can close accepted cases via RLS policy. Messaging: `conversations` (id, request_id, client_id, attorney_id, last_message_text, last_message_at, created_at) with `UNIQUE(client_id, attorney_id, request_id)`, `messages` (id, conversation_id, sender_id, content, is_system, read_at, created_at), `conversation_read_cursors` (conversation_id, user_id PK, last_read_at). A DB trigger `on_message_insert` auto-updates `conversations.last_message_text` and `last_message_at`. Supabase Realtime enabled on `messages` table for live message delivery; typing indicators use Realtime Broadcast.
+**Database**: Supabase Postgres with tables: `profiles` (id, updated_at, username, full_name, avatar_url, website, role), `requests` (id, client_id, title, description, practice_area, state, city, budget_min, budget_max, urgency, status, created_at, updated_at), `request_attachments` (id, request_id, file_url, file_name, file_type, file_size, created_at), `saved_requests` (attorney_id, request_id), `hidden_requests` (attorney_id, request_id), `quotes` (id, request_id, attorney_id, pricing_type, fee_amount, estimated_hours, scope_of_work, estimated_timeline, terms, valid_until, status, decline_reason, viewed_at, created_at, updated_at) with `UNIQUE(request_id, attorney_id)`, `quote_templates` (id, attorney_id, name, pricing_type, fee_amount, estimated_hours, scope_of_work, estimated_timeline, terms, created_at, updated_at). The `role` column uses a `user_role` enum (`'client' | 'attorney'`). The `urgency` column uses `request_urgency` enum, `status` uses `request_status` enum. The `pricing_type` column uses `pricing_type` enum (`flat_fee | hourly | retainer | contingency`), `quote status` uses `quote_status` enum (`draft | submitted | viewed | accepted | declined | withdrawn | expired`). A DB trigger `update_request_status_on_quote()` auto-updates request status to `quoted` on first quote insert and to `accepted` when a quote is accepted (also auto-declines other quotes). Case management: `case_notes` (id, request_id, user_id, content, created_at) stores activity feed notes for active/closed cases, `reviews` (id, request_id, client_id, attorney_id, rating 1-5, comment, created_at, UNIQUE on request_id) stores client ratings after case closure. An accepted request represents an active case; attorneys can close accepted cases via RLS policy. Messaging: `conversations` (id, request_id, client_id, attorney_id, last_message_text, last_message_at, created_at) with `UNIQUE(client_id, attorney_id, request_id)`, `messages` (id, conversation_id, sender_id, content, is_system, read_at, created_at), `message_attachments` (id, message_id, file_url, file_name, file_type, file_size, width, height, created_at) for images/PDFs attached to messages, `conversation_read_cursors` (conversation_id, user_id PK, last_read_at). A DB trigger `on_message_insert` auto-updates `conversations.last_message_text` and `last_message_at`. Supabase Realtime enabled on `messages` table for live message delivery; typing indicators use Realtime Broadcast; online presence uses Supabase Realtime Presence on a global `presence:app` channel. Storage bucket `message-attachments` stores uploaded chat files.
 
 **Auth**: Supabase Auth with Zustand store (`stores/auth-store.ts`) for signIn/signUp/signOut/resetPassword. Auth context (`contexts/auth-context.tsx`) listens to `onAuthStateChange` and provides `isInitialized`/`isAuthenticated`. Session persisted via SQLite-backed localStorage.
 
@@ -58,9 +58,13 @@ eas build --profile production --platform ios
 | `hooks/use-requests.ts` | React Query hooks for requests (client CRUD, attorney browse, save/hide) |
 | `hooks/use-quotes.ts` | React Query hooks for quotes (attorney CRUD, client review, templates) |
 | `hooks/use-cases.ts` | React Query hooks for cases (list, notes, close, reviews) |
-| `hooks/use-messages.ts` | React Query hooks for conversations and messages (list, send, create, read cursors, unread count) |
+| `hooks/use-messages.ts` | React Query hooks for conversations and messages (list, send, create, read cursors, unread count, attachment upload) |
 | `hooks/use-realtime-messages.ts` | Supabase Realtime hooks for live messages and typing indicators |
+| `hooks/use-presence.ts` | Supabase Realtime Presence hook for online status tracking |
 | `stores/unread-store.ts` | Zustand store for total unread message count (synced to tab badge) |
+| `stores/presence-store.ts` | Zustand store for online user IDs (global presence channel) |
+| `hooks/use-push-notifications.ts` | Expo push token registration, permission handling, and notification tap → navigation |
+| `supabase/functions/send-push-notification/index.ts` | Supabase Edge Function that sends Expo push notifications to recipient devices |
 | `constants/practice-areas.ts` | Legal practice area options |
 | `constants/us-states.ts` | US states with abbreviations |
 | `constants/pricing-types.ts` | Pricing type options (flat_fee, hourly, retainer, contingency) and valid-until options |
@@ -71,7 +75,8 @@ eas build --profile production --platform ios
 | `components/screens/quote-detail-screen.tsx` | Shared quote detail view (client & attorney variants) |
 | `components/screens/case-detail-screen.tsx` | Shared case detail view with notes feed and review (client & attorney variants) |
 | `components/screens/conversations-list-screen.tsx` | Shared conversations list (alert/inbox); tapping navigates to case/request detail with chat tab |
-| `components/ui/chat-panel.tsx` | Reusable embedded chat panel with lazy conversation creation, realtime messages, typing indicators |
+| `components/ui/chat-panel.tsx` | Reusable embedded chat panel with lazy conversation creation, realtime messages, typing indicators, image/doc attachments, online presence banner |
+| `components/ui/image-viewer.tsx` | Full-screen image viewer modal with pinch-to-zoom and share |
 | `components/ui/segmented-control.tsx` | Details/Chat tab toggle used in case and request detail screens |
 | `app/_layout.tsx` | Root layout with providers + ProtectedRouteGuard |
 | `app/index.tsx` | Entry point, redirects to auth splash |
@@ -532,4 +537,62 @@ CREATE POLICY "Users can update own read cursors"
 
 -- Enable Realtime for messages
 ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+```
+
+### Phase 4 (Message Attachments): message_attachments table and storage bucket (run in Supabase SQL Editor)
+
+```sql
+-- Message attachments table
+CREATE TABLE public.message_attachments (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  message_id uuid REFERENCES public.messages(id) ON DELETE CASCADE NOT NULL,
+  file_url text NOT NULL,
+  file_name text NOT NULL,
+  file_type text NOT NULL,
+  file_size integer NOT NULL,
+  width integer,
+  height integer,
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+
+CREATE INDEX idx_message_attachments_message ON public.message_attachments (message_id);
+
+ALTER TABLE public.message_attachments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Participants can view message attachments"
+  ON public.message_attachments FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.messages m
+      JOIN public.conversations c ON c.id = m.conversation_id
+      WHERE m.id = message_id
+      AND (c.client_id = auth.uid() OR c.attorney_id = auth.uid())
+    )
+  );
+
+CREATE POLICY "Participants can add message attachments"
+  ON public.message_attachments FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.messages m
+      JOIN public.conversations c ON c.id = m.conversation_id
+      WHERE m.id = message_id
+      AND (c.client_id = auth.uid() OR c.attorney_id = auth.uid())
+    )
+  );
+
+CREATE POLICY "Message sender can delete attachments"
+  ON public.message_attachments FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM public.messages m
+      WHERE m.id = message_id AND m.sender_id = auth.uid()
+    )
+  );
+
+-- Storage bucket for message attachments
+INSERT INTO storage.buckets (id, name, public) VALUES ('message-attachments', 'message-attachments', true);
+
+CREATE POLICY "Users can upload message attachments"
+  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'message-attachments' AND auth.role() = 'authenticated');
+
+CREATE POLICY "Anyone can view message attachments"
+  ON storage.objects FOR SELECT USING (bucket_id = 'message-attachments');
 ```
