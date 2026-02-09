@@ -64,28 +64,31 @@ export function useRegisterPushToken() {
           requestId?: string;
           requestStatus?: RequestStatus;
           role?: 'client' | 'attorney';
+          initialTab?: string;
         };
 
-        const { requestId, requestStatus, role: recipientRole } = data;
+        const { requestId, requestStatus, role: recipientRole, initialTab } = data;
         if (!requestId || !recipientRole) return;
+
+        const tab = initialTab ?? 'chat';
 
         if (requestStatus === 'accepted' || requestStatus === 'closed') {
           router.push({
             pathname: recipientRole === 'client'
               ? '/(client)/cases/[id]'
               : '/(attorney)/cases/[id]',
-            params: { id: requestId, initialTab: 'chat' },
+            params: { id: requestId, initialTab: tab },
           } as never);
         } else {
           if (recipientRole === 'client') {
             router.push({
               pathname: '/(client)/requests/[id]',
-              params: { id: requestId, initialTab: 'chat' },
+              params: { id: requestId, initialTab: tab },
             } as never);
           } else {
             router.push({
               pathname: '/(attorney)/browse/[id]',
-              params: { id: requestId, initialTab: 'chat' },
+              params: { id: requestId, initialTab: tab },
             } as never);
           }
         }

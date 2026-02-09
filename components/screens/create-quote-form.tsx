@@ -25,6 +25,7 @@ import { Radii, Spacing } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCreateQuote, useQuoteTemplates, useSaveTemplate, useUpdateQuote } from '@/hooks/use-quotes';
 import { useRequest } from '@/hooks/use-requests';
+import { sendRequestStatusNotification } from '@/lib/push-helpers';
 import { quoteCreateSchema, type QuoteCreateFormData } from '@/lib/validators';
 import { formatFee } from '@/components/ui/quote-card';
 import type { PricingType, Quote, QuoteTemplate } from '@/types';
@@ -147,6 +148,17 @@ export function CreateQuoteForm({ requestId, editQuote }: CreateQuoteFormProps) 
           terms: values.terms,
           valid_until: validUntil.toISOString(),
         });
+
+        if (request) {
+          sendRequestStatusNotification({
+            recipientId: request.client_id,
+            title: 'New Quote Received',
+            body: `You received a new quote for "${request.title}"`,
+            requestId,
+            requestStatus: 'quoted',
+            recipientRole: 'client',
+          });
+        }
       }
 
       if (saveAsTemplate && templateName.trim()) {
@@ -172,7 +184,7 @@ export function CreateQuoteForm({ requestId, editQuote }: CreateQuoteFormProps) 
             : isEditing ? 'Failed to update quote' : 'Failed to submit quote';
       Alert.alert('Error', msg);
     }
-  }, [form, requestId, createQuote, updateQuote, saveAsTemplate, templateName, saveTemplate, router, isEditing, editQuote]);
+  }, [form, requestId, request, createQuote, updateQuote, saveAsTemplate, templateName, saveTemplate, router, isEditing, editQuote]);
 
   const isSubmitting = createQuote.isPending || updateQuote.isPending;
 

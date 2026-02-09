@@ -40,6 +40,7 @@ import {
 } from '@/hooks/use-cases';
 import { useConversationForRequest } from '@/hooks/use-messages';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { sendRequestStatusNotification } from '@/lib/push-helpers';
 import { useAuthStore } from '@/stores/auth-store';
 
 interface CaseDetailScreenProps {
@@ -91,12 +92,22 @@ export function CaseDetailScreen({ requestId, variant, initialTab = 'details' }:
           style: 'destructive',
           onPress: async () => {
             await closeCase.mutateAsync(requestId);
+            if (caseData) {
+              sendRequestStatusNotification({
+                recipientId: caseData.request.client_id,
+                title: 'Case Closed',
+                body: `Your case "${caseData.request.title}" has been closed`,
+                requestId,
+                requestStatus: 'closed',
+                recipientRole: 'client',
+              });
+            }
             router.back();
           },
         },
       ],
     );
-  }, [closeCase, requestId, router]);
+  }, [closeCase, requestId, router, caseData]);
 
   const handleArchiveCase = useCallback(() => {
     Alert.alert(

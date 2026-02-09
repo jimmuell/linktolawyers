@@ -17,6 +17,7 @@ import { Colors } from '@/constants/theme';
 import { Radii, Spacing } from '@/constants/typography';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCreateRequest, useUpdateRequest, useUploadAttachment } from '@/hooks/use-requests';
+import { notifyMatchingAttorneys } from '@/lib/push-helpers';
 import {
   requestCreateSchema,
   type RequestCreateFormData,
@@ -152,6 +153,10 @@ export function CreateRequestWizard({ editRequest }: CreateRequestWizardProps = 
         }
 
         router.replace(`/(client)/requests/success?requestId=${requestId}&status=${status}`);
+
+        if (status === 'pending' && !isEditing) {
+          notifyMatchingAttorneys({ requestId, requestTitle: values.title, practiceArea: values.practiceArea });
+        }
       } catch (error) {
         Alert.alert('Error', error instanceof Error ? error.message : isEditing ? 'Failed to update request' : 'Failed to create request');
       }

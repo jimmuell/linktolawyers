@@ -149,8 +149,8 @@
 
 ### 2.5 Notifications (Phase 2)
 
-- [ ] New request matches notification (attorney)
-- [ ] Request status change notification (client)
+- [x] New request matches notification (attorney)
+- [x] Request status change notification (client)
 
 ---
 
@@ -197,7 +197,7 @@
 
 ### 3.5 Notifications (Phase 3)
 
-- [ ] New quote received notification (client)
+- [x] New quote received notification (client)
 - [ ] Quote viewed notification (attorney)
 - [ ] Quote accepted/declined notification (attorney)
 - [ ] Quote expiring soon notification (attorney)
