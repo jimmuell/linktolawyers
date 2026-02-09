@@ -88,6 +88,14 @@
 - [x] Handle notification received (foreground)
 - [x] Handle notification tap (background)
 
+### 1.8.1 Android Push Notification Setup
+
+- [ ] Configure Firebase project and add Android app (`com.jimmuell.linktolawyers`)
+- [ ] Download `google-services.json` and add to project
+- [ ] Add `googleServicesFile` to `app.json` android config
+- [ ] Create new EAS dev build for Android
+- [ ] Guard push token registration to handle missing FCM gracefully (try/catch in `useRegisterPushToken`)
+
 ---
 
 ## Phase 2: Client Request System
